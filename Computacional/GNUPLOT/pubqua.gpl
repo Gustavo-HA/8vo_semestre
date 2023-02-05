@@ -1,0 +1,14 @@
+set terminal svg enhanced size 500,500
+set output 'file.svg'
+set encoding iso_8859_1
+set zeroaxis lt -1 lc -1
+set grid
+set title 'This is the title of the graph'
+set xlabel 'Molecular weight (kDa)'
+set ylabel 'Solvent-inaccessible surface area x 1000 ({\305}^2)'
+set nokey          # turn off the legend
+set key top left
+set xrange [0:1.3]
+
+f(x) = 60.*tan(x)-(60.**2 * 32.2)/(2*50.**2 * cos(x)**2)+6.5-7.
+plot f(x)

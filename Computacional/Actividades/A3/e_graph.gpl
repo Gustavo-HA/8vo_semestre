@@ -1,0 +1,7 @@
+set terminal epslatex color
+set output 'egraph.tex'
+set zeroaxis lt -1 lc -1
+set xlabel '$x$'
+set ylabel '$f(x)$'
+
+plot [-0.1:11] x*sin(x)-log(x)+x-2.6 title "$x\\sin(x)-\\ln(x)+x-2.6$" w lp pt 12 lw 2 ps 0.6

@@ -1,0 +1,23 @@
+Diferenciación numérica
+
+Como primera aproximación, se hace una velocidad media
+a) Se tienen las posiciones de un objeto a varios tiempos (discretos)
+b) A partir de la grafica es posible determinar la velocidad (promedio)
+La precisión depende de dt.
+Para obtener una derivada numérica, debemos hacer dt -> 0
+
+Podemos utilizar hacia adelante, hacia atras o central.
+
+-Diferencia hacia el frente.
+x = x_0 + h   --> x-x_0=h
+Pn(x) = f(x_0) + h*f'(x_0) ! Funcion a primer grado
+
+-Diferencia hacia atrás
+x = x_0-h
+Pn(x) = f(x_0)-h*f'(x_0)
+
+-central
+
+
+
+La mejor es la centrada, se utilizará en la tarea de n-esima derivada

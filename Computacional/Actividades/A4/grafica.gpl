@@ -1,0 +1,11 @@
+set terminal epslatex color
+set output 'graph.tex'
+set zeroaxis lt -1 lc -1
+unset key
+set xlabel '$x$'
+set ylabel '$f(x)$'
+set mytics 4
+set mxtics 2
+
+
+plot [-2:6][-5:10] log(x**2+1) - exp(x/2)*cos(pi*x) title "$\\ln(x^2+1) - \\exp{x/2}\\cos(\\pi x)$" w lp pt 12 lw 2 ps 0.6

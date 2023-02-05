@@ -1,0 +1,12 @@
+set xlabel 'x'
+set ylabel 'f(x)'
+set title "Grafica de f(x)"
+set grid xtics mytics  
+set grid ytics mytics 
+set mytics 5
+
+plot [1:2][-1:1] 10**x-3.5*x**3-18 lw 3
+
+replot 0 lw 1 
+
+

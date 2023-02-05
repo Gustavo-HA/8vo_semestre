@@ -1,0 +1,24 @@
+set terminal epslatex color
+set output '2e.tex'
+set zeroaxis lt -1 lc -1
+unset key
+set grid xtics
+set grid ytics
+set xlabel '$x$'
+set ylabel '$f(x)$'
+set mytics 4
+set mxtics 4
+
+#a
+#plot [-0.1:3] x**3-8 title w lp pt 12 lw 2 ps 0.6
+#b
+#plot [-1:5.3] -0.8*x*x*x*x + 6.6*x*x*x - 16*x*x + 11.7*x + 10 w lp pt 12 lw 2 lc 1 ps 0.6
+#c
+#plot [0:5] x*exp(0.5*x) + 1.2*x - 5 w lp pt 12 lw 2 lc 2 ps 0.6
+#d
+#plot [-8:8][-20:25] cos(x)*cosh(x) + 1 w lp pt 12 lw 2 lc 3 ps 0.6
+#e
+plot [-0.5:5] x-2*exp(-x) w lp pt 12 lw 2 ps 0.6 lc 7 
+
+
+

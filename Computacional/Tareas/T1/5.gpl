@@ -1,0 +1,12 @@
+set terminal epslatex color
+set output "5.tex"
+set xlabel 'Distancia $z$ al disco (m)'
+set ylabel 'Fuerza (N)'
+set zeroaxis lt -1 lc -1
+unset key
+set grid xtics  
+set grid ytics 
+set mytics 4
+set mxtics 4
+
+plot [0:3][-1:4] 9.4*2.4*10*x*(1-x/(sqrt(x**2+0.1**2)))/(2*0.885) - 0.3 w lp pt 12 lw 2 ps 0.6

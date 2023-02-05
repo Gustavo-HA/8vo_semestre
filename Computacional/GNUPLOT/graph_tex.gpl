@@ -1,0 +1,16 @@
+set terminal epslatex color
+set output 'plot.tex'
+set zeroaxis lt -1 lc -1
+unset key
+set xlabel '$x$'
+set ylabel '$f(x)$'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+
+a =
+b = 
+f(x) = 
+plot [a:b] f(x) title "$f(x)$" w lp pt 12 lw 2 ps 0.6

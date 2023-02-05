@@ -1,0 +1,8 @@
+set xlabel "x" font "times-new-roman, 14"
+set ylabel "y" font "times-new-roman, 14"
+set size 1.0,1.0
+set term png size 600,600
+set output "ej6.png"
+plot [0:3] x-sqrt(2) lw 3
+replot 0 lw 3
+# comentario

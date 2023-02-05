@@ -1,0 +1,20 @@
+Errores de convergencia del método de newton
+
+- Si x0 está lejana de un punto de inflección (cambio de concavidad)
+- Cercano a un máximo o un mínimo
+
+METODO DE LA SECANTE
+
+- Se propone un intervalo [x_0,x_1] que contiene a la raíz (a)
+- La raíz (x_2) de la linea secante que uno a los extremos del intervalo es una aprox
+  a la raiz (a) de la función.
+- El valor de x_2 se calcula mediante la ecuación de la recta que pasa por 2 puntos
+
+x_{n+1} = x_n - f(x_n) (x_n-x_{n-1})/(f(x_n)-f(x_{n-1}))
+
+Cuatro iteraciones con f = 0.2x^2  - 1
+x_0 = 0,6 x_1 = 3.5
+
+1. x_2 = 3 - f(3)(3-0)/f(3)-f(0) = 1.7317
+2. x_2 = 2.11
+3. x_2 = 2.25

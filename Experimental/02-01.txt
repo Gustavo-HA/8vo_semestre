@@ -1,0 +1,48 @@
+MÉTODO CIENTÍFICO.
+
+Se define como el conjunto de reglas que señalan el procedimiento para llevar a cabo una investigación.
+
+Este conjunto de reglas parten de principios que les dan validez lógica.
+
+Estos principios se conocen como postulados del método científico:
+
+1. La existencia de un universo o realidad exterior. El universo se manifiesta a través de los sentidos, sin embargo, este 
+   existe independientemente de nosotros.
+
+2. La posibilidad de hacer observaciones, abstracciones y juicios.
+    A nuestra observación se le atribuyen ideas -> modelación. Es la abstracción de conceptos para modelar sistemas o fenómenos y se 
+    hacen juicios al respecto.
+
+3. La validez de la lógica.
+    Nos permite distinguir entre razonamientos correctos e incorrectos.
+
+4. La existencia de uniformidad o regularidad en la naturaleza.
+    La ciencia se trata con fenómenos que presentan una regularidad, no una manifestación aislada (Como leer una mente).
+
+5. La necesidad de someter a prueba experimental todas las hipótesis, leyes y teorías.
+
+El método científico se muestra:
+    1. Definición del problema.
+        Muchas veces el problema ya existe y se parte del establecido.
+    
+    2. Hipótesis de trabajo.
+        Una proposición de lo que está ocurriendo / Posible explicación, siempre hay un conocimiento establecido que ayuda a 
+        proponer una hipótesis.
+    
+    3. En caso de que el trabajo / investigación sea de carácter experimental, se propone el diseño experimental.
+    
+    4. Realización del experimento.
+
+    5. Análisis de resultados.
+
+    6. Obtención de conclusiones.
+        La interpretación es el punto más importante a la hora de realizar una investigación de frontera, se enuncia el resultado.
+
+    7. Elaboración del informe.
+
+SS MENTAL no se dibujar.
+
+
+
+
+

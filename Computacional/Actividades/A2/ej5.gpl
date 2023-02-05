@@ -1,0 +1,5 @@
+set xlabel "x" font "times-new-roman, 14"
+set ylabel "y" font "times-new-roman, 14"
+plot [0:2] 10**x-25*x+14 lw 3
+replot 0 lw 3
+# comentario

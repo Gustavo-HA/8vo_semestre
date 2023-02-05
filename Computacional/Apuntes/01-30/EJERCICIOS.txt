@@ -1,0 +1,15 @@
+1. Resolver la siguiente ecuación con solución analítica.
+e**x = 2
+
+2. Resolver las siguientes ecuaciones.
+a) x*2**x = 1
+b) sin(x)=e**x
+c) x*log10(x)=1
+d) e**(x-1)=1/(1+x)
+e) 2**x+x=15
+f) log(2-x**2)=x**2
+g) (1+log(x))/(1-log(x)) = 2
+h) 2*x-cos(x)=3
+i) x = tan(x)
+
+3. ¿Cómo estimar la raíz de 2?

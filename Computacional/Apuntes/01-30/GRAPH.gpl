@@ -1,0 +1,11 @@
+set terminal svg enhanced size 500,500
+set output "test.svg"
+
+set zeroaxis lt -1
+
+
+set grid xtics mytics  
+set grid ytics mytics 
+set mytics 5
+
+plot [0:10][-50:30] tan(x)-x  w p pt 0 ps 0.6

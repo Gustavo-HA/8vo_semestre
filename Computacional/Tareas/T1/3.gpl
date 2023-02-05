@@ -1,0 +1,12 @@
+set terminal epslatex color
+set output "3.tex"
+set zeroaxis lt -1 lc -1
+unset key
+set xlabel 'Temperatura (K)'
+set ylabel 'Resistencia ($\Omega$)'
+set grid xtics  
+set grid ytics 
+set mytics 4
+set mxtics 4
+
+plot [0:1350] 100*(1+5.485e-3*x+6.65e-6*x**2+2.8055e-11*x**4-2.0e-17*x**6)-300 w l lw 2 

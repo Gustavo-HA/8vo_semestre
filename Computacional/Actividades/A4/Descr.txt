@@ -1,0 +1,4 @@
+a) Usando el método de la secante y newton determinar las raíces de 
+f(x) = ln(x**2+1) - exp(x/2)cos(pi*x) en el intervalo [-2,6]
+
+b) Hacer 5 ciclos del método de la secante a mano
