@@ -1,0 +1,16 @@
+set terminal png 
+set output "3.png"
+set zeroaxis lt -1 lc -1
+set xlabel 'Valor de lambda*T'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+c = 1.4385e-2
+a = 0
+b = 0.03
+f(x) = x*(1-exp(-c/x))-c/5
+plot [a:b] f(x) w lp pt 12 lw 2 ps 0.6 lc 18
+
+#FORMATO X,LATEX

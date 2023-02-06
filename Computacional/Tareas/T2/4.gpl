@@ -1,0 +1,17 @@
+set terminal png
+set output "4.png"
+set zeroaxis lt -1 lc -1
+set xlabel 'Valor de f'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+n = 0.44
+re = 6000
+a = 0.01
+b = 0.1
+f(x) = (1/x)-(4*log10(re*x**(1-0.5*n)))/(n**0.75)+0.4/(n**1.2)
+plot [a:b] f(x) w lp pt 12 lw 2 ps 0.6 lc 2
+
+#FORMATO X, LATEX
