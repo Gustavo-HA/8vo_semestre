@@ -1,0 +1,7 @@
+Ejercicio en clase.
+Se tiene una varilla de 2m y se corta en dos piezas, una de ellas dobla para formar un cuadrado, y la otro
+para formar un triangulo equilatero
+
+¿Qué longitud deben tener las piezas para que el área encerrada por ambas figuras sea minima y maxima?
+
+Resolver numericamente usando los programas del curso
