@@ -1,9 +1,7 @@
 set terminal epslatex color
 set output 'plot.tex'
 set zeroaxis lt -1 lc -1
-unset key
 set xlabel '$x$'
-set ylabel '$f(x)$'
 set grid xtics
 set grid ytics
 set mytics 4
