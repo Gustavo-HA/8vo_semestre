@@ -6,6 +6,7 @@ set grid xtics
 set grid ytics
 set mytics 4
 set mxtics 4
+set label '( 0.055 , 0 )' at 0.05,0 point lt 1 pt 6 ps 3 offset 1,-1 
 
 n = 0.44
 re = 6000
