@@ -9,7 +9,7 @@ program maxmin
     CALL SECANT (DL,X0,DX,ISTEP)
     if (der2(x0).gt.0) then
         print*,'Se encontro un minimo en x = ',x0
-    else
+    else if (der2(x0).lt.0) then
         print*,'Se encontro un maximo en x = ',x0
     endif
     STOP
@@ -33,18 +33,19 @@ end
 
 real*8 function f(x)
     real*8 :: x
-    f = cos(x)
+    real*8, parameter :: L=600, E = 50000, I = 30000, wo = 2.5
+    f = (wo*(-x**5+2*L**2*x**3-L**4*x))/(120*E*I*L)
     return
 end
 
 real*8 function der1(x)
-    real*8 :: x,h=1.0e-7,f
+    real*8 :: x,h=1.0e-6,f
     der1 = (f(x+h)-f(x-h))/(2*h)
     return
 end
 
 real*8 function der2(x)
-    real*8 :: x,h=1.0e-7,f
-    der2 = (f(x+h)-2*f(x)+f(x-h))/(h**2)
+    real*8 :: x,h=1.0e-6,f
+    der2 = (f(x+2*h)-2*f(x)+f(x-2*h))/(4*h**2)
     RETURN
 END
