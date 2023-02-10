@@ -1,0 +1,11 @@
+La derivada de grado n es haciendo recursividad}
+
+
+Integración numérica.
+
+- Se puede utilizar un polinomio de interpolación de Lagrange para modelar la función
+    f(x) en un intervalo [a,b] dados un conjunto de puntos {x0,x1,x2,...}
+
+-- Método trapezoidal
+
+I = h(0.5f(inicial) + f(2) + ... + 0.5f(final)) ! n debe ser par.

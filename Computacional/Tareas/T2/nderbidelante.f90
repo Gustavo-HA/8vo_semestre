@@ -40,7 +40,7 @@ end
 function derivada(x,n)
     implicit none
     integer :: n,k,combination
-    real*8 :: x,derivada,h=1.0e-2 ,sum,f
+    real*8 :: x,derivada,h=1.0e-1 ,sum,f
     sum=0
     do 1 k=0,N
         sum = sum + ((-1)**(k+n))*combination(n,k)*f(x+k*h)

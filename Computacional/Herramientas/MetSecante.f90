@@ -29,7 +29,7 @@
       END
 
       FUNCTION F(X)
-        F = 80*exp(-2*x) + 20*exp(-0.5*x) - 7
+        F = (0.05*x**2+0.01*exp(x)-1)**2
       RETURN
 
       END

@@ -1,31 +1,17 @@
-set terminal png 
-set output "2.png"
+set terminal epslatex color 
+set output "2.tex"
 set zeroaxis lt -1 lc -1
-<<<<<<< HEAD
-unset key
-set xlabel 'r'
-set ylabel 'g(r)'
-=======
-set xlabel 'Distancia del electrón al núcleo r  [Angstrom]'
->>>>>>> 2c40d9e752d4fd38f53d90b9935563afceb15d72
+set key center center
+set xlabel 'Distancia radial $r$ [\AA]'
 set grid xtics
 set grid ytics
 set mytics 4
 set mxtics 4
-<<<<<<< HEAD
-ao = 0.529
-a = 0
-b = 1
-f(x) = (4*x**2*exp(-2*x/ao))/(ao**3)
-plot [a:b][0:1.2] f(x) w lp pt 12 lw 2 ps 0.6
-
-=======
 
 ao = 0.529167
 a = 0
 b = 1.2
 f(x) = (4*x**2*exp(-2*x/ao))/(ao**3)
-plot [a:b] f(x) t "g(r)" w lp pt 12 lw 2 ps 0.6 lc 15
+plot [a:b] f(x) t "$g(r)$" w l lw 3 lc 15
 
 #FORMATO LATEX
->>>>>>> 2c40d9e752d4fd38f53d90b9935563afceb15d72

@@ -1,0 +1,9 @@
+Numerical recipes (métodos ya escritos)
+
+Cómo hacer para que un programa agarre varios programas?
+
+a
+
+
+gfortran -c aux.f gfortran -c diag.f
+gfortran flow.f aux.o diag.o -o flow.exe

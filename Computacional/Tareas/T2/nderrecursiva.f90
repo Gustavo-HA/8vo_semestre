@@ -18,7 +18,7 @@ end
 
 real*8 recursive function der(n,x) result(nder)
     integer :: n
-    real*8 :: x, h = 1.0e-6, f
+    real*8 :: x, h = 1.0e-4, f
     if (n.eq.1) then
     nder = (f(x+h)-f(x-h))/(2*h)
     return
@@ -29,6 +29,7 @@ real*8 recursive function der(n,x) result(nder)
     nder = (der(n-1,x+h)-der(n-1,x-h))/(2*h)
     return
     else
+        
     print*,"ERROR, N DEBE SER ENTERO MAYOR O IGUAL A 1"
     end if
 END
