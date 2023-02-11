@@ -1,0 +1,10 @@
+Método de Simpson
+
+Se utilizan 3 puntos para hacer un polinomio, los 3 separados por un valor h
+Se emplea un polinomio cuadrático para aproximar f(x) en el intervalo [a,b].
+
+I(f) = h/3 (f(a)+4*f(c)+f(b)) #Calcula la integral entre 3 puntos
+
+El primer y ultimo termino tienen factor 1/3
+Terminos impares tienen factor 4/3
+Terminos pares tienen 

@@ -29,6 +29,6 @@ END
 
 FUNCTION F(X)
     real*4, parameter :: n = 0.44, re = 6000
-    F = (1/x)-(4*log10(re*x**(1-0.5*n)))/(n**0.75)+0.4/(n**1.2)
+    F = (1/x)-(4*log(re*x**(1-0.5*n)))/(n**0.75)+0.4/(n**1.2)
     RETURN
 END

@@ -7,6 +7,7 @@ set grid xtics
 set grid ytics
 set mytics 4
 set mxtics 4
+
 k = 14.4
 vo = 1.09e3
 ro = 0.33
