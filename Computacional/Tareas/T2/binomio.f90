@@ -1,7 +1,6 @@
 program t1_2
   implicit none
   integer :: x , combi1
-  integer*4 :: combi2
   real :: y
   print*, 'Valor de n : ' 
   read*, y 
@@ -14,19 +13,11 @@ program t1_2
         end do               
       case ( : -1)
         print*, 'Entero negativo'
-        do x = 0 , int(-y)
-          print*, 'Combinacion', x,  combi2(x, int(-y))
-        end do 
+        call combi3(y)
       end select
   else 
-    select case (int(y))
-      case (1 : )
-        print*, 'Real positivo'
-        call combi3(y)
-      case ( : -1)
-        print*, 'Real negativo'
-        call combi3(y)
-    end select
+    print*,'Real'
+    call combi3(y)
   end if 
 end program t1_2
 
@@ -48,42 +39,27 @@ function combi1 (n, k) result (res)
   res = factorial (n) / (factorial (k) * factorial (n - k))
 end function combi1
 
-integer*4 function combi2(r, n) 
-  implicit none 
-  integer*4, intent(in):: r, n 
-  integer*4 i, j/1/ 
-  do i = max(n-r, r) + 1, n 
-    j = j * i 
-  enddo 
-  do i = min(n - r, r), 2, -1 
-    j = j / i 
-  end do 
-  combi2 = j 
-  return 
-end function combi2
-
-
 subroutine combi3(r)
   real, intent(in) :: r
   real :: nume
-  integer :: limsup, n, factorial
+  integer :: limsup, k, factorial
   print*, 'Orden de la expansion (0,1,...,inf): '
   read*,  limsup
-  n=0
-  do while (n.le.limsup)
+  k=0
+  do while (k.le.limsup)
     nume=1.0
-    if (n==0) then
+    if (k==0) then
       combireal = 1
     else
-      a = n-r+1
-      do while (a.le.r)
+      a = r
+      do while (a.ge.(r-k+1))
         nume = nume*a
-        a = a + 1
+        a = a - 1
       enddo
-      combireal = nume/(1.0*factorial(n))
+      combireal = nume/(1.0*factorial(k))
     end if  
-    write(*,*)'Combinacion', n , combireal
-    n = n+1
+    write(*,*)'Termino', k , combireal, 'x^',k
+    k = k+1
   enddo
   return
 end 
