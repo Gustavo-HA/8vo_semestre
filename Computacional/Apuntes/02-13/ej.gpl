@@ -1,7 +1,7 @@
 set terminal png 
-set output "relleno.png"
+set output "act2-13.png"
 set zeroaxis lt -1 lc -1
-unset key
+set key
 set xlabel 'x'
 set ylabel 'f(x)'
 set grid xtics
@@ -9,7 +9,8 @@ set grid ytics
 set mytics 4
 set mxtics 4
 
-a = -4
-b = 10
-f(x) = cos(x)
+a = 0
+b = 5
+f(x) = x**3 * log(x)**2
 plot [a:b] f(x) w lp pt 12 lw 2 ps 0.6
+

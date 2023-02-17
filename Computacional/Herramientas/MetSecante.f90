@@ -29,7 +29,7 @@
       END
 
       FUNCTION F(X)
-        F = (0.05*x**2+0.01*exp(x)-1)**2
+        F = x**2-110*x+1
       RETURN
 
       END
