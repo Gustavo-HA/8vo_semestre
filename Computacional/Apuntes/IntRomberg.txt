@@ -1,0 +1,2 @@
+Se utiliza método de trapecio y se pued eutilizar richardson
+

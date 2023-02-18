@@ -1,0 +1,15 @@
+set terminal epslatex color
+set output "1_graph.tex"
+set zeroaxis lt -1 lc -1
+set key
+set xlabel '$x$'
+set ylabel '$f(x)$'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+a = 0
+b = pi
+f(x,c) =  (1+c*(1-cos(x))**2)/((1+c*sin(x)**2)*sqrt(1+2*c*(1-cos(x))))
+plot [a:b] f(x,1) t "$a=1$" lw 2, f(x,2) t "$a=2$" lw 2,f(x,3) t "$a=3$" lw 2,f(x,4) t "$a=4$" lw 2,f(x,5) t "$a=5$" lw 2

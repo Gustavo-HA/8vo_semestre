@@ -1,0 +1,72 @@
+CANTIDAD FÍSICA
+
+Son aquellas cantidades que caracterizan a los fenómenos físicos, y que deben ser cuantificadas (medidas)
+bajo un procedimiento avalado por la comunidad científica. 
+
+PATRONES DE MEDICIÓN
+
+Patrón: Es un dispositivo (instrumento) y/o normativa (método de medición) utilizados para tomar la magnitud de
+una propiedad física y homogenizar la medición. El patrón debe tener las siguientes características.
+
+- Aceptación internacional
+Que sea reconocido y aceptado por una comunidad global a nivel mundial.
+
+- Facil reproducibilidad
+
+- Útil y práctico
+Debe tener la utilidad en cada proceso donde se requiera medir la cantidad asociada al patrón, además su
+transportación, aplicación y facilidad para medir son importantes.
+
+- Invariante
+No debe cambiar en forma significativa su magnitud con otras cantidades físicas diferentes. Se dan
+rangos para que el patrón pueda ser efectivo.
+
+UNIDAD DE LONGITUD: EL METRO (m)
+
+Inicialmente, el metro fue definido en 1791 como la diezmillonésima parte del cuadrante polar de la tierra que
+pasaba a través de París.
+
+Cada 10 años se hace una revisión de las unidades de medida
+
+En 1960, se vuelve a definir como: 1650763.73 longitudes de onda de la luz anaranjada-rojiza emitida
+por el átomo de Kriptón 86.
+
+En 1983 se redefine como: Longitud recorrida por la luz en el vacío en 1/299 792 458 segundos.
+
+UNIDAD DE MASA: KILOGRAMO (kg)
+
+Se define a través de la constante de Planck (h).
+
+UNIDAD DE TIEMPO: SEGUNDO (s)
+
+En 1967 se definió como: la frecuencia de resonancia del átomo de cesio que es de 9.192.631.770 Hz y se dice 
+que el segundo es, la duración de 9.192.631.770 periodos de la radiación correspondiente a la transición entre
+dos niveles energéticos hiperfinos del estado fundamental del átomo de cesio 133.
+
+UNIDAD DE CORRIENTE ELÉCTRICA: AMPERE (A) (proximo a cambiar)
+
+El ampere es la de corriente constante que es mantenida en el mismo sentido entre dos conductores rectos para-
+lelos infinitamente largos y de sección transversal despreciable, separados 1 metro en el vacío y en los cuales
+se produce una fuerza entre ellos de 2*10^-7 N por metro de longitud.
+
+UNIDAD DE TEMPERATURA TERMODINÁMICA: KELVIN (K)
+
+El Kelvin, la unidad de temperatura termodinámica, se define como la fracción 1/273.16 de la temperatura
+termodinámica del punto triple del agua. 
+
+UNIDAD DE CANTIDAD DE SUSTANCIA: MOL (mol)
+
+El mol es la cantidad de sustancia de un sistema que contiene tantas entidades elementales como átomos hay en
+0.012 kg de carbono 12; su símbolo es el "mol". En 0.012 kg de carbono 12 hay 6.023*10^23. Este número es el
+que conocemos como número de avogadro.
+
+UNIDAD DE INTENSIDAD LUMINICA: CANDELA (cd)
+
+La candela es la intensidad luminosa, en una dirección dada, de una fuente que emite radiación monocromática
+de frecuencia igual a 540*10^12 Hz y que tiene una intensidad radiante de wa wa wa wa wa wa wa wa.
+
+
+
+
+
+

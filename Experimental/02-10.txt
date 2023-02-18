@@ -1,0 +1,72 @@
+CIFRAS SIGNIFICATIVAS
+
+Cuando realizamos una medición se define un intervalo de confianza; con un valor central y un rango definido por la incertidumbre.
+La incertidumbre depende del instrumento de medición. 
+
+El rango que define la incertidumbre está dado por 
++- (1/2)*La mínima cifra conocida con certeza.
+
+En una regla graduada en milimetros, si se mide algo que está entre 20mm y 21 mm, se realiza la medida como:
+d = 20 +- 0.5mm
+
+Las cifras significativas son los dígitos que se conocen con certeza, más un digito que es incierto.
+
+Ejemplo:
+2.5 -------- 2 cifras significativas.
+2.54 ------- 3 cifras significativas.
+0.0254 ----- 3 cifras significativas. *
+104.6 ------ 4 cifras significativas.
+2705.0 ----- 5 cifras significativas. +
+0.0000320 -- 3 cifras significativas.
+10.0 ------- 3 cifras significativas.
+
+Reglas para determinar las cifras significativas.
+
+- Los ceros al principio de un número no son significativos. Simplemente ubican el punto decimal. (Ejemplo *)
+- Los ceros dentro de un número son significativos. (Ejemplo +)  
+- Los ceros al final de un número después del punto decimal, son significativos.
+- En el caso de enteros sin punto decimal, que terminan con uno o más ceros, los ceros pueden o no ser significativos.
+	Ejemplo:
+	1500 g --- 4 cifras significativas
+	1.5*10^3 - 2 cifras significativas
+	1.50*10^-3 3 cifras significativas
+	El número de cifras significativas se define en base a que cero es estimado en la medición.
+
+LAS CIFRAS SIGNIFICATIVAS EN LAS OPERACIONES.
+
+Multiplicación y división:
+
+El resultado final de una operación de multiplicación o división debe tener el mismo número de cifras significativas que la
+cantidad con el menor número de cifras significativas utilizadas en el cálculo.
+
+K = 1/2 (3.0)(15.0^2) = 337.5, se debe reportar como K = 338 = 3.4*10^2
+
+Suma y resta:
+
+Cuando se suman o se resta números, el número de decimales en el resultado debe ser igual al número más pequeño de decimales
+en cualquier término de la suma. No nos interesan mucho las cifras significativas sino los decimales.
+	Ejemplo:
+	320.04 + 80.2 + 20.020 + 20.0 = 440.260 que resultaria en 440.3
+
+
+PRECISIÓN
+Se emplea para indicar la reproducibilidad de una medida.
+Alta precisión significa gran proximidad entre los resultados obtenidos en la medición de una misma magnitud.
+Baja precisión significa una amplia dispersión de los mismos.
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+			TAREA: Agarrar una pelotita y medir en cada caída el tiempo de caida. 
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+EXACTITUD
+Se utiliza para señalar la proximidad del valor experimental de una cantidad física y su valor real o "verdadero".
+La exactitud de un instrumento indica la desviación de la lectura respecto a una entrada conocida.
+Mientras más pequeña sea esta desviación mayor será la exactitud.
+
+
+
+
+
+
+
+
