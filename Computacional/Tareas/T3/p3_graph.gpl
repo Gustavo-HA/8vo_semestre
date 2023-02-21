@@ -1,0 +1,14 @@
+set terminal epslatex color
+set output 'p3.tex'
+set zeroaxis lt -1 lc -1
+set key at 1.5,70
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+a = 0
+b = 4.3
+f(x) = exp(x)
+g(x) = exp(-x/10.)*(250*x)/(6+x)
+plot [a:b] f(x) w l lw 2, g(x) w l lw 2

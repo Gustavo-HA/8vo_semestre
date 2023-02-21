@@ -3,9 +3,9 @@
        integer n, j
        real x2, xi, xf, h, A1, sum, F, I
        
-       xi = -1.0  ! Limite inferior
-       xf = 1.0  ! Limite superior
-       n = 100   ! Numero de intervalos debe ser par
+       xi = 12.0  ! Limite inferior
+       xf = 13.0  ! Limite superior
+       n = 1000   ! Numero de intervalos debe ser par
        h = 1.0*ABS(xf-xi)/n   ! Longitud del intervalo
        A1 = (h/3.0)*(f(xi)+f(xf)) ! Evaluada en los extremos
        I = 0
@@ -42,6 +42,6 @@
        
        f1 = sqrt(x) - 1
        f2 = (x**2)/3 - 0.75
-       f = f1-f2
+       f = 2*x
        return
        end

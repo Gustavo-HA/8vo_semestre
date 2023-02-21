@@ -14,12 +14,12 @@
 !    OUTPUT:  Aproximacion J a la Integral.
 !
 ! **************** Actividad 10 *************************    
-      C(XZ)=-sqrt((2-xz**2)/2)      !Limite inferior en y (punto sobre la curva inferior)
-      D(XZ)=sqrt((2-xz**2)/2)      !Limite superior en y (punto sobre la curva superior)
+      C(XZ)=log(xz)    !Limite inferior en y (punto sobre la curva inferior)
+      D(XZ)=2*log(xz)     !Limite superior en y (punto sobre la curva superior)
 !    Integrando F(X,Y)      
-      F(XZ,YZ)= 2-xz**2-2*yz**2 ! Integrando
-      A= -sqrt(2.0)         !Limite inferior de X
-      B= sqrt(2.0)          !Limite superior de X
+      F(XZ,YZ)= 1.0 ! Integrando
+      A= 1.0         !Limite inferior de X
+      B= 2.71828182          !Limite superior de X
 
 !Numero de intervalos para evaluar la mas interna
       N=800
