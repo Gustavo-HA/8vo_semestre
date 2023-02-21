@@ -34,10 +34,11 @@ c Se hace un lazo DO
                 eraprox=e-estimate
                 errorRP= (e-estimate)/e*100.0
         END DO
-        WRITE(*,*) " e es: ", e
+        WRITE(*,*) " e a la cuarta es: ", e**4.d0
         WRITE(*,*) "La estimacion de e es: ", estimate
         WRITE(*,*) "Error de aproximacion:", eraprox
         WRITE(*,*) "Error relativo porcentual: ", errorRP
-        PAUSE
+        write(*,*)'e a la cuarta potencia: ',estimate**4.d0
+        
         STOP
         END 

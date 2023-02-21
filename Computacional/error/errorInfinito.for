@@ -8,8 +8,8 @@ c Esto produce un ciclo infinito.
       
    10 X= X-0.1
       PRINT *, X, SQRT(X)
-      if (X. NE. 1.0) GO TO 10
-    
+      if (X.NE. 1.0) GO TO 10
+
       STOP
       END
  

@@ -44,7 +44,7 @@
       ENDIF
       endif
 ! Terminar
-      pause
+      
       STOP
       END
 

@@ -13,11 +13,10 @@ c 1+0.1= 1.09999
       suma1= 1.0
       
       do 47 i = 1, 10000
-      suma= suma+ 0.00001
-      suma1= suma1+ 0.00001
+      suma= suma+ 0.7
+      suma1= suma1+ 0.7
    47 continue
    
       write(*,*)"Simple P.=",suma1 ,"Doble P.=",suma
-      Pause
       STOP
       END 

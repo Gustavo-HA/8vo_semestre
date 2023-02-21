@@ -1,7 +1,7 @@
       Program ErrorRedondeo
-! Se evalua una funci¢n que contiene resta de numeros cercanos
+! Se evalua una funciï¿½n que contiene resta de numeros cercanos
        Real*4 x, y, z   ! Precision simple
-       Real*8 xd,yd,zd  !Doble precision, significa 8 bytes
+       Real*8 yd,zd  !Doble precision, significa 8 bytes
                         ! Tiene una aprox. de 15-17 digitos
                         
 !      PRUEBE usar 5 digitos y verifique que la 2da ec. da mejor approx.
@@ -31,6 +31,6 @@
       write(*,60)errorSuma
    60 format ("Error suma relativo=   ", F27.21)
    
-      pause
+      
       stop
       end
