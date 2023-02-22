@@ -1,0 +1,14 @@
+set terminal epslatex color
+set output "area.tex"
+set zeroaxis lt -1 lc -1
+unset key
+set xlabel '$x$'
+set ylabel '$f(x)$'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+
+f(x) = x**2-3
+plot [-3.5:3.5] f(x) w l lw 3 lc "blue",[-2:2] f(x) w filledcurves y1 = 1 fc "green",[-3.5:3.5] 1 w l lw 3 lc 1

@@ -1,7 +1,2 @@
-set termoption enhanced
-set style fill transparent solid 0.70 noborder
-set key off
-set sample 1000
-set xlabel "{/*1.2x}" 
-set ylabel "{/*1.2f(x)}"
-plot [0:2*pi] '+' using ($1):(sin($1+.1)):(sin($1-.1))  w filledcurvess
+set xrange [0:10]
+plot 2**x w filledcurves y1=1024
