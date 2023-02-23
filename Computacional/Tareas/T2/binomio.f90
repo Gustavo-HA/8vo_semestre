@@ -1,7 +1,7 @@
 program t1_2
   implicit none
   integer :: x , combi1
-  real :: y
+  real :: y, punto=0.5
   print*, 'Valor de n : ' 
   read*, y 
   if (modulo(y,1.0) .eq. 0) then 
@@ -13,11 +13,11 @@ program t1_2
         end do               
       case ( : -1)
         print*, 'Entero negativo'
-        call combi3(y)
+        call combi3(y,punto)
       end select
   else 
     print*,'Real'
-    call combi3(y)
+    call combi3(y,punto)
   end if 
 end program t1_2
 
@@ -39,7 +39,7 @@ function combi1 (n, k) result (res)
   res = factorial (n) / (factorial (k) * factorial (n - k))
 end function combi1
 
-subroutine combi3(r)
+subroutine combi3(r,y)
   real, intent(in) :: r
   real :: nume
   integer :: limsup, k, factorial
@@ -58,7 +58,7 @@ subroutine combi3(r)
       enddo
       combireal = nume/(1.0*factorial(k))
     end if  
-    write(*,*)'Termino', k , combireal, 'x^',k
+    write(*,*)'Termino', k , combireal, 'x^',k,y**k
     k = k+1
   enddo
   return

@@ -6,16 +6,13 @@ program ndercentral
     print*,'Orden de la derivada: ';read*,n 
     print*,'Punto a evaluar: ';read*,x
     write(*,'(a,i2,a,f5.2,a,f50.33)')'La derivada de orden ',n,' en el punto ',x,' es igual a: ',nder(x,n)
-    !do 1 i = 1, n
-    !    write(*,'(a,i2,a,f5.2,a,f50.33)')'La derivada de orden ',i,' en el punto ',x,' es igual a: ',nder(x,i)
-    !1 continue    
 end
 
 function f(x)
     implicit none
     integer, parameter :: qp = selected_real_kind(33, 4931)
     real(qp) :: x, f
-    f = exp(x)
+    f = sin(x)
     return
 end
 
@@ -43,7 +40,7 @@ function nder(x,n)
     integer :: n, k, combination
     integer, parameter :: qp = selected_real_kind(33, 4931)
     real(qp) :: f, x, sum = 0, nder
-    real(qp), parameter :: h=1.0e-1
+    real(qp), parameter :: h=1.0e-7
     do 1 k=0,n
         sum = sum + (-1)**(k) * combination(n,k) * f(x+(n-2*k)*h)
     1 continue

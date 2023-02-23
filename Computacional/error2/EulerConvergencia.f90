@@ -11,7 +11,8 @@ PROGRAM EulerConvergencia
    WRITE(*,*) "Orden de la aproximacion por Taylor: "
    READ(*,*) n
    open(10,file=archivo)
-   write(10,'(a,10x,a,10x,a)')'#Grado del polinomio','Aprox. de exp(-10)','Polinomio Taylor'
+   write(10,'(a,10x,a,20x,a,20x,a,10x,a)')'#Grado del polinomio','Aprox. de exp(-10)','Aprox. de exp(4)','Aprox. de exp(10)'&
+        & ,'Polinomio Taylor'
 
    DO k = 0, n, 1
         factor = gamma(real(k+1))
@@ -26,13 +27,14 @@ PROGRAM EulerConvergencia
                 endif
         enddo
         call quitaespacio(polinomio)
-        write(10,'(8x,i2,19x,f18.16,10x,a)')k,estimate**(-10),trim(polinomio)
+        write(10,'(8x,i2,19x,f18.16,19x,f18.5,19x,f18.5,10x,a)')k,estimate**(-10),estimate**(4),estimate**(10),trim(polinomio)
    END DO
    close(10)
 
-   ! Graficar
-   call execute_command_line('convergencia.gpl')
-
+   ! Graficamos
+        call execute_command_line('convergencia-10.gpl')
+        call execute_command_line('convergencia4.gpl')
+        call execute_command_line('convergencia10.gpl')
    STOP
    END 
 

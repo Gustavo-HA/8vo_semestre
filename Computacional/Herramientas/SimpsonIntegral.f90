@@ -1,12 +1,13 @@
 program Simpsonintegral
-    integer :: n,j
-    real*4 :: x2,xi,xf,h,a1,sum,f,i
+    real*8 :: h,a1,xf,xi,f,x2,sum=0,i
+    integer :: j,n
 
     print*,'Intervalo inferior y superior';read*,xi,xf
     print*,'Numero de intervalos';read*,n
 
+
     h = 1.0*abs(xf-xi)/n
-    a1 = (h/3)*(f(xi)+f(xf))
+    a1 = (h/3.d0)*(f(xi)+f(xf))
 
     do j=1,n-1
         x2 = xi + h*j
@@ -15,15 +16,15 @@ program Simpsonintegral
         else
             sum = sum + 2.0 * f(x2)
         end if
-        i = h/3.0 * sum + a1
     end do
-
-    write(*,*)'El area de la integral es:',i
+    i = h/3.0 * sum + a1
+    write(*,*)'El valor de la integral es:',i
     stop
 end
 
 
-function f(x)
-    f= sqrt(1+x**2)
+real*8 function f(x)
+    real*8 :: x
+    f= x**9
     return
 end

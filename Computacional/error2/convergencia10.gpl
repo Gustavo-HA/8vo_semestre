@@ -1,0 +1,9 @@
+set zeroaxis lt -1 lc -1
+set mxtics 3
+set mytics 4
+set title 'Aproximacion exp(10)'
+set xlabel "Orden de aproximacion"
+set xrange [0:10]
+set yrange [0:2*exp(10)]
+
+plot "resultado.txt" using 1:4 w p pt 7 ps 1.5, exp(10.0) w l lw 2

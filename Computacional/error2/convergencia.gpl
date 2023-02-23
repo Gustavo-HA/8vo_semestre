@@ -1,6 +1,0 @@
-set zeroaxis lt -1 lc -1
-set mxtics 3
-set mytics 4
-set xlabel "Orden de aproximacion"
-set xrange [2:8]
-plot "resultado.txt" using 1:2 w l lw 2, exp(-10.0) w l lw 2
