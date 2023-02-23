@@ -2,14 +2,14 @@ program intervaloraiz
     ! Dado un intervalo [a,b], hallar cuantas raices tiene la funcion.
     real*4 :: a,b, liminf(10), limsup(10),raiz(10),f ,sign! Imprime los intervalos de hasta 10 raices y 10 exactas
     integer :: n, count, i, ceros
-    real*4, dimension(:), allocatable :: x! Vector dinamico, tendran dimension n y m respectivamente
+    real*4, dimension(:), allocatable :: x! Vector dinamico, tendra dimension n
     
     write(*,*) '---------------------------'
     write(*,'(9x,a)')'PROBLEMA 6'
     write(*,*) '---------------------------'
-    write(*,*)'Inserte el intervalo [a,b]: '
+    write(*,'(a)',ADVANCE='NO')'Inserte el intervalo [a,b]: '
     read*,a,b
-    write(*,*)'Introduzca el valor de dx: '
+    write(*,'(A)',advance='no')'Introduzca el valor de dx: '
     read*,dx
     write(*,*) '----------------------------'
     n = int((b-a)/dx) !Numero de pasos
