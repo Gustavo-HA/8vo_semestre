@@ -1,0 +1,17 @@
+set xlabel 'x'
+set ylabel 'y'
+set title 'EjemploCuadruple'
+f(x) = 5-2.5*(x-1)-1.0*(x-1)*(x-2) - 0.68*(x-1)*(x-2)*(x-2.5)-0.33*(x-1)*(x-2)*(x-2.5)*(x-3)
+plot [0:5.1] f(x) title 'P_4(x)' lw 5 lc rgb 'blue'
+
+replot '-' w p ls 7 ps 2, '-' w p ls 7 ps 2, '-' w p ls 7 ps 2, '-' w p ls 7 ps 2, '-' w p ls 7 ps 2
+1 5
+e
+2 2.5
+e
+2.5 2
+e
+3 1.66
+e
+5 1
+e

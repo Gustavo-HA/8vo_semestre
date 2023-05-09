@@ -1,0 +1,15 @@
+set xlabel 'x'
+set ylabel 'y'
+set title 'Ejemplo2'
+f(x) = -1.0*(x-1)*(x-4)*(x-6)/(24) - 1.0*x*(x-4)*(x-6)/(15) - x*(x-1)*(x-6)/(24) - 1.0*x*(x-1)*(x-4)/(60)
+plot [-1:7] f(x) title 'P_2(x)' lw 5 lc rgb 'blue'
+
+replot '-' w p ls 7 ps 2, '-' w p ls 7 ps 2, '-' w p ls 7 ps 2, '-' w p ls 7 ps 2
+0 1
+e
+1 -1
+e
+4 1
+e
+6 -1
+e

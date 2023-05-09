@@ -1,0 +1,13 @@
+set zeroaxis lt -1 lc -1
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+g = 9.81
+c = 12.5
+m = 68.1
+
+h(x) = g*m/c * (1-exp(-c*x/m))
+
+plot [0:30] h(x) t 'Velocidad al tiempo t' w l lw 2 lc 1, g*m/c t 'Velocidad limite'

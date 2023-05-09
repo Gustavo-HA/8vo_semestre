@@ -1,0 +1,8 @@
+set zeroaxis lt -1 lc -1
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+set size ratio 1
+
+plot 'ambos.txt' u 2:3 w lp pt 7 ps 0.5

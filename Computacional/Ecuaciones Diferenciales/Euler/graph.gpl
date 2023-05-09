@@ -1,0 +1,2 @@
+c = 3.2
+plot 'Numerica.dat' u 1:2 w l lw 1 lc rgb 'blue', (3.2/x**4 -  2*x/5)**0.5 lw 1 lc rgb 'red'

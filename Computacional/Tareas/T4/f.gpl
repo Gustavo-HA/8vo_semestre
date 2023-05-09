@@ -1,0 +1,17 @@
+set terminal png
+set output "f.png"
+set zeroaxis lt -1 lc -1
+set xlabel 'x'
+set ylabel 'f(x)'
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+set yrange [-2:2]
+set arrow from 0.142,-2 to 0.142,2 nohead lc rgb 'red' lw 3
+
+
+a = -0.5
+b = 0.5
+f(x) = tanh(2*pi*x)
+plot [a:b] f(x) w l lw 2

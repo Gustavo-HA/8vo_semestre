@@ -1,0 +1,14 @@
+ set xlabel 'x'
+ set ylabel 'y'
+ unset key
+ plot    1.00000000     *x +    0.00000000     lw 3 lc rgb 'blue',\
+     '-' w p ls 7 ps 2,\
+     '-' w p ls 7 ps 2,\
+     '-' w p ls 7 ps 2
+    
+   1.00000000       1.00000000    
+ e
+   2.00000000       2.00000000    
+ e
+   3.00000000       3.00000000    
+ e

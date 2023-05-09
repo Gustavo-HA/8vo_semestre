@@ -1,0 +1,14 @@
+Se promedia las derivadas al principio y al final del intervalo.
+
+Se hacen iteraciones con la siguiente formula:
+
+y*_{i+1} = y_i + h * f(x_i,y_i)
+y_{i+1} = y_i + h/2 ( f(x_i,y_i) + f(x_{i+1},y*_{i+1}) )
+
+Ejemplo 1: dy/dx = y ; y(0) = 1 ; x en el intervalo [0,2]
+
+y*_1 luego y_1
+Después y*_2 y y_2
+.
+.
+.

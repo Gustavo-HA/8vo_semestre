@@ -1,0 +1,3 @@
+set xlabel 'x'
+set ylabel 'y'
+plot "funcion_analitica.txt" w l lw 2, "fnumerica.txt" w p pt 7 ps 1 lc 7

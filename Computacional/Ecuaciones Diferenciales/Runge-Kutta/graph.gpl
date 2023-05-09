@@ -1,0 +1,5 @@
+set key center right
+set xlabel 'x'
+set ylabel 'y'
+#set label "y(1) = 2.6408" at 0.7,2.64
+plot 'RungeKutta.dat' u 1:2 t "Solucion numerica" w lp lw 1 lc rgb 'blue' ps 1 pt 7

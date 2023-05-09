@@ -1,0 +1,12 @@
+set zeroaxis lt -1 lc -1
+set grid xtics
+set grid ytics
+set mytics 4
+set mxtics 4
+
+#dy/dx = -2x**3+12x**2-20*x+8.5 con condicion inicial y(0) = 1
+
+
+f(x) = -x**4/2 + 4*x**3 -10*x**2 + 8.5*x+1
+
+plot [0:2] f(x) w l lw 2 lc 1
