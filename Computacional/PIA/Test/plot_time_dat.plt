@@ -21,7 +21,7 @@ set title " Solucion Navier - Stokes "
 
 do for [i=1:7] {
   
-   plot sprintf('time%d.dat', i) u 1:2:(0.35*$3):(0.35*$4):(sqrt($3**2+$4**2)) \
+   plot sprintf('vel_time%d.dat', i) u 1:2:(0.35*$3):(0.35*$4):(sqrt($3**2+$4**2)) \
    w vec lw 1.7 lc palette title sprintf('tiempo %d', i)
 
  }

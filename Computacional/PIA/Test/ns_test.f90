@@ -12,11 +12,6 @@
 ! Los nodos se conforman en dividir nuestro sistema en una geometria (finita), en nuestro caso 
 ! Triangulo isoparametrico (6 nodos)
 ! Tiene un nodo en cada vertice y en los puntos medios 
-!             
-!             1 
-!        4 _ / \ _ 6    
-!       2 _ / _ \ _ 3  
-!             5    
 ! 
 ! Recomiendo : 
 ! 
@@ -27,15 +22,15 @@
 ! - (Playlist) https://www.youtube.com/playlist?list=PLKSR9A4mJH5rvt_Lf007xbmJISRWA0xYS
 
 
-program water7 
+program ns_cylinderflow 
 
   
-  integer, parameter :: maxnew = 10   ! Numero maximo de pasos sol. N-S por iteracion
-  integer, parameter :: maxsec = 10   ! Numero maximo de pasos sol. general por iteracion 
-  integer, parameter :: nx = 21       ! Espaciado de los nodos en x (hay 2*nx+1) 
-  integer, parameter :: ny = 7        ! Espaciado de los nodos en y (hay 2*ny+1) 
+  integer, parameter :: maxnew = 4    ! Numero maximo de pasos Newton por iteración
+  integer, parameter :: maxsec = 10  ! Numero maximo de pasos Secante por iteración
+  integer, parameter :: nx = 21      ! Espaciado de los nodos en x (hay 2*nx+1) !cambio
+  integer, parameter :: ny = 7        ! Espaciado de los nodos en y (hay 2*ny+1) !cambio
   integer, parameter :: mx = 2*nx -1 , my = 2*ny -1 ! Numero de nodos en x , y 
-  integer, parameter :: maxrow = 27*ny              ! La ultima fila de la matriz A  
+  integer, parameter :: maxrow = 27*ny              ! La ultima fila de la matriz A. maxrow = 27*min(nx,ny)
   integer, parameter :: maxeqn = 2*mx*my + nx*ny    ! Numero maximo de equaciones y funciones 
   integer, parameter :: nquad = 3                   ! El número de puntos de cuadratura por elemento.
   integer, parameter :: nelemn = 2*(nx - 1)*(ny -1) ! Numero de elementos 
@@ -45,7 +40,6 @@ program water7
   integer :: indx(np, 2)    ! Contiene para cada iesimo nodo el index de la velocidad u, v (Puede 0)
   integer :: insc(np)       ! Contiene para cada iesimo nodo el index de la presion p (Puede 0)
   integer :: isotri(nelemn) ! Contiene para cada elemento 1 si es isoparametrico o 0 
-  integer :: iwrite   = 1   ! Controla el numero de outputs escritos en la termial (test)
   integer :: neqn           ! Numero de ecuaciones y funciones
 
   integer :: i, j                 ! Iteradores 
@@ -56,18 +50,20 @@ program water7
   integer :: nlband               ! Ancho de banda inferior de la matriz
   integer :: node(nelemn,nnodes)  ! Contiene por cada elemento el ind global de cada elemento del nodo
   integer :: nrow                 ! Numero de filas necesarias para guardar la matriz A 
-  integer :: numnew, numsec       ! Contador de numeros totales de pasos 
+  integer :: numnew               ! Contador de numeros totales de pasos 
   integer :: ibump = 2            ! Define cuando los elementos son isoparametricos (Solo Arriba)
 
   logical :: long                 ! Orientacion Vertical(V) u Horizontal (F), depende de nx, ny 
 
   real(8) :: a(maxrow, maxeqn)    ! Contiene nuestro arreglo principal 
-  real(8) :: anew  = 0.0d0        ! Valor nuevo de a (Elemento de arreglo principal)
-  real(8) :: anext = 0.3d0        ! Step de siguiente valor de a 
-  real(8) :: aold  = 0.0d0        ! Valor anterior de nuestro (Metodo de secante)
+  real(8) :: anew        ! Valor nuevo de a (Elemento de arreglo principal)
+  real(8) :: anext        ! Step de siguiente valor de a 
+  real(8) :: aold       ! Valor anterior de nuestro (Metodo de secante)
   real(8) :: area(nelemn)         ! Area total de los elementos 
   real(8) :: dcda(my)             ! Sensivilidad 
-  real(8) :: ddot                 ! Producto punto de dos vectores
+  real(8), external :: ddot                 ! Producto punto de dos vectores
+  real(8) :: cpu1
+  real(8) :: cpu2
   real(8) :: f(maxeqn)            ! Funcion f(x) (Los coeficientes de los elementos finitos)
   real(8) :: g(maxeqn)            ! Funcion g(x) (Estimación inicial g = 0.)
   real(8) :: gr(my, my)           ! La matriz de Gram
@@ -104,203 +100,168 @@ program water7
   real(8) :: rjpold  = 0.0d0          ! rjnew
   real(8) :: tolnew  = 0.00001d0      ! Tolerancia de convergencia de pasos sol. N-S por iteracion
   real(8) :: tolsec  = 0.00001d0      ! Tolerancia de convergencia de pasos sol. general por iteracion 
-  real(8) :: xbleft  = 5.0d0          ! Coordenada x izquierda del cilindro 
-  real(8) :: xbrite  = 6.0d0          ! Coordenada x derecha del cilindro
+  real(8) :: xbleft  = 0.0d0          ! Coordenada x izquierda del cilindro 
+  real(8) :: xbrite  = 0.5d0          ! Coordenada x derecha del cilindro
   !cambio
-! ---------------------- Condiciones iniciales ----------------------------- ! 
+  ! ---------------------- Condiciones iniciales ----------------------------- ! 
  
   real(8) :: xlngth  = 10.0d0     ! Largo de la region (xf - x0)
-  real(8) :: aprof   = 1.0d0      ! Valor de la altura del bump
-  real(8) :: reynld  = 4.3d0      ! El valor del no. Reynolds (2300 Flujo laminar)
+  real(8) :: aprof   = 0.5d0      ! Valor de la altura del bump
+  real(8) :: reynld  = 2.3d0      ! El valor del no. Reynolds
   real(8) :: xprof   = 4.0d0      ! Cord x en la que se mide el perfil 
   real(8) :: ylngth  = 3.0d0      ! Altura de la region (h)
 
-  character (len = 10):: time_file = 'time0.dat'    ! Archivo guardar datos (xc(ip), yc(ip), u, v)
-
+  character (len = 13):: time_file = 'vel_time0.dat'    ! Archivo guardar datos (xc(ip), yc(ip), u, v)
+  character (len = 16):: time_file_test = 'magvel_time0.dat' !Archivo guardar datos xc, yc, sqrt(u**2+y**2)
   
+
+
+  call cpu_time(cpu1)
+  aold = 0.0d0
+  anew = 0.0d0
+  anext = 0.3
+
   print*, ''
   write(*, '(1x,a,f10.7)')' El objeto se generara con una altura de : ', aprof
   write(*,'(1x,a,f10.5,a,f10.5)')' Largo y altura del cilindro : ', xlngth,',', ylngth
-  write(*,'(1x,a,f10.7)')' Numero de Reynolds    :', reynld
   write(*,'(1x,a,i7)')' Numero de Elementos   : ', nelemn
   print*, ''
 
 
 
-! ---------------------- Definicion de la geometria del sistema ----------------------------- ! 
+  ! ---------------------- Definicion de la geometria del sistema ----------------------------- ! 
 
-! 27 / 03 
-! setgrd : Configuracion de geometria de la malla 
- 
-  call setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
+  ! 27 / 03 
+  ! setgrd : Configuracion de geometria de la malla 
+  call setgrd ( ibump, indx, insc, isotri,  long, maxeqn, mx, my, &
      nelemn, neqn, nnodes, node, np, nx, ny, xbleft, xbrite, xlngth )
-
-! 28 / 03 
-! setxy :  Establece las coordenadas x, y de los puntos de la malla.
-
+  ! 28 / 03 
+  ! setxy :  Establece las coordenadas x, y de los puntos de la malla.
   ypert = aprof ! Establecemos nuestro punto de la altura del puente como ypert 
-  call setxy ( iwrite, long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
-
-! 29 / 03 
-! setqud : Determinar nuestros puntos de cuadratura numérica
-
- call setqud ( area, isotri, iwrite, nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
-
-! 02 / 04 
-! setbas : Establecer valores de funciones base en puntos de cuadricula
-
+  call setxy (  long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
+  ! 29 / 03 
+  ! setqud : Determinar nuestros puntos de cuadratura numérica
+  call setqud ( area, isotri,  nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
+  ! 02 / 04 
+  ! setbas : Establecer valores de funciones base en puntos de cuadricula
   call setbas ( isotri, nelemn, nnodes, node, np, nquad, phi, psi, xc, xm, yc, ym )
-
-
-! 03 / 04 
-! setlin : Encuentra puntos en la línea de muestreo del perfil de velocidad
-
-  call setlin ( iline, indx, iwrite, long, mx, my, np, nx, ny, xlngth, xprof )
-
-! setban : Calcula el ancho de banda.
-
+  ! 03 / 04 
+  ! setlin : Encuentra puntos en la línea de muestreo del perfil de velocidad
+  call setlin ( iline, indx,  long, mx, my, np, nx, ny, xlngth, xprof )
+  ! setban : Calcula el ancho de banda.
   call setban ( indx, insc, maxrow, nband, nelemn, nlband, nnodes, node, np, nrow )
 
-
-
-
-
-! --------- Solución de Navier Stokes, utilizando una estimación inicial de g = 0  ------------ ! 
-
-
-
-! 04 / 04 
-! Empezamos con la solución de las ecuaciones de Navier Stokes
-! Primero utilizamos una estimación inicial de G = 0.
-!
+  ! --------- Solución de Navier Stokes, utilizando una estimación inicial de g = 0  ------------ ! 
+  ! 04 / 04 
+  ! Empezamos con la solución de las ecuaciones de Navier Stokes
+  ! Primero utilizamos una estimación inicial de G = 0.
+  !
   g(1:neqn) = 0.0d0 
-
-! nstoke : Resuelve la ecuacion de Navier Stokes utilizando elementos de Taylor-Hood.
-
+  ! nstoke : Resuelve la ecuacion de Navier Stokes utilizando elementos de Taylor-Hood.
   call nstoke ( a, area, f, g, indx, insc, isotri, maxnew, &
     maxrow, nband, nelemn, neqn, nlband, nnodes, node, np, nquad, &
     nrow, numnew, phi, psi, reynld, tolnew, xc, xm, yc, ym )
-
-! 05 / 04 
-! resid : Calcula el residuo de la solucion G (Recuerda que al principio fue 0)
-
-  call resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
+  ! 05 / 04 
+  ! resid : Calcula el residuo de la solucion G (Recuerda que al principio fue 0)
+  call resid ( area, g, indx, insc, isotri,  nelemn, neqn, nnodes, &
     node, np, nquad, phi, psi, res, reynld, xc, xm, yc, ym )
-
-! 07 / 04 
-! getg : Copia el flujo a lo largo de la linea de perfil.
-!
+  ! 07 / 04 
+  ! getg : Copia el flujo a lo largo de la linea de perfil.
+  !
   call getg ( g, iline, my, neqn, uprof )
-
-! gram : Calcula y almacena la matriz gram.
-  call gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, np, r, uprof, xc, xprof, yc )
-
-
-! ------------- Escritura del archivo de datos e iteracion general ---------------------- ! 
+  ! gram : Calcula y almacena la matriz gram.
+  call gram ( gr, iline, indx,  my, nelemn, nnodes, node, np, r, uprof, xc, xprof, yc )
 
 
-! 10 / 04 
-! Escribimos nuestro primer archivo de datos en time_file
-! xc(ip) : Coordenadas x de los nodos 
-! yc(ip) : Coordenadas y de los nodos 
-! u      : Coeficientes de la velocidad horizontal U
-! v      : Coeficientes de la velocidad vertical V 
-
-  call file_name_inc ( time_file ) ! Aumenta un digito el nombre del archivo 
-
-  open (33, file = time_file, status = 'replace' )
-
-  call time_write ( f, indx, neqn, np, yc ,xc) ! Guarda en el primer archivo 'time0.dat'
-
-  close (33)
-
-
-! Borra la información sobre la verdadera solución antes de comenzar.
+  ! ------------- Escritura del archivo de datos e iteracion general ---------------------- ! 
+  ! 10 / 04 
+  ! Escribimos nuestro primer archivo de datos en time_file
+  ! xc(ip) : Coordenadas x de los nodos 
+  ! yc(ip) : Coordenadas y de los nodos 
+  ! u      : Coeficientes de la velocidad horizontal U
+  ! v      : Coeficientes de la velocidad vertical V 
+  !call file_name_inc ( time_file ) ! Aumenta un digito el nombre del archivo 
+  !call file_name_inc ( time_file_test ) !cambio
+  !open (33, file = time_file, status = 'replace' )
+  !open (34, file = time_file_test, status = 'replace')
+  !call time_write ( f, indx, neqn, np, yc ,xc) ! Guarda en el primer archivo 'time0.dat'
+  !close (33)
+  !close (34)
+  ! Borra la información sobre la verdadera solución antes de comenzar.
   g(1:neqn) = 0.0d0
-
-! Bucle de iteración para escribir 'time(n).dat':
+  ! Bucle de iteración para escribir 'time(n).dat':
   do iter = 1, maxsec
-
-! Actualiza la malla.
-  ypert = anew
-
-! Establece las coordenadas x, y de los puntos de la malla.
-  call setxy ( iwrite, long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
-
-! Establecer los puntos de cuadratura.
- call setqud ( area, isotri, iwrite, nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
-
- 
-! Establezca los valores de las funciones base en los puntos de la cuadrícula.
-  call setbas ( isotri, nelemn, nnodes, node, np, nquad, phi, psi, xc, xm, yc, ym )
-
-! Resuelve el flujo en el nuevo valor del parámetro.
-  call nstoke ( a, area, f, g, indx, insc, isotri, maxnew, &
-    maxrow, nband, nelemn, neqn, nlband, nnodes, node, np, nquad, &
-    nrow, numnew, phi, psi, reynld, tolnew, xc, xm, yc, ym )
-
-! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
-  call getg ( g, iline, my, neqn, uprof )
-
-  ! Guarda en el archivo 'time(1,2,3,4 ...).dat'
-  call file_name_inc ( time_file )
-  open (33, file = time_file, status = 'replace' ) 
-  call time_write ( f, indx, neqn, np, yc ,xc)
-  close (33)
-
-
-! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
+    !write(*,*)'Iteracion secante:', iter
+    ! Actualiza la malla.
+      ypert = anew
+    ! Establece las coordenadas x, y de los puntos de la malla.
+      call setxy (  long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
+    ! Establecer los puntos de cuadratura.
+      call setqud ( area, isotri,  nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
+    ! Establezca los valores de las funciones base en los puntos de la cuadrícula.
+      call setbas ( isotri, nelemn, nnodes, node, np, nquad, phi, psi, xc, xm, yc, ym )
+    ! Resuelve el flujo en el nuevo valor del parámetro.
+      call nstoke ( a, area, f, g, indx, insc, isotri, maxnew, &
+        maxrow, nband, nelemn, neqn, nlband, nnodes, node, np, nquad, &
+        nrow, numnew, phi, psi, reynld, tolnew, xc, xm, yc, ym )
+    ! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
     call getg ( g, iline, my, neqn, uprof )
-
-! Resuelve sistema lineal para sensibilidades.
-  itype = -2
-  call linsys ( a, area, sens, g, indx, insc, isotri, itype, maxrow, &
-        nband, nelemn, neqn, nlband, nnodes, node, np, nquad, nrow, &
-        phi, psi, reynld, xc, xm, yc, ym )
-
-! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
-  call getg ( sens, iline, my, neqn, dcda )
-
-
-! Evalua j primo en el valor actual del parámetro donde j es funcional a minimizar.
-! jprime = 2.0d+00 * dcda(i) * ( gr(i,j) * uprof(j) - r(i) )
-  rjpnew = 0.0d0
-  do i = 1, my
-    temp = -r(i)
-      do j = 1, my
-        temp = temp + gr(i,j) * uprof(j)
+    ! Guarda en el archivo 'time(1,2,3,4 ...).dat'
+    call file_name_inc ( time_file )
+    call file_name_inc ( time_file_test )
+    open (33, file = time_file, status = 'replace' ) 
+    open (34, file = time_file_test, status = 'replace' ) 
+    call time_write ( f, indx, neqn, np, yc ,xc)
+    close (33)
+    close (34)
+    ! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
+    call getg ( g, iline, my, neqn, uprof )
+    ! Resuelve sistema lineal para sensibilidades.
+    itype = -2
+    call linsys ( a, area, sens, g, indx, insc, isotri, itype, maxrow, &
+          nband, nelemn, neqn, nlband, nnodes, node, np, nquad, nrow, &
+          phi, psi, reynld, xc, xm, yc, ym )
+    ! Obtiene el perfil de velocidad a lo largo de nuestra geometria horizontal.
+    call getg ( sens, iline, my, neqn, dcda )
+    ! Evalua j primo en el valor actual del parámetro donde j es funcional a minimizar.
+    ! jprime = 2.0d+00 * dcda(i) * ( gr(i,j) * uprof(j) - r(i) )
+      rjpnew = 0.0d0
+      do i = 1, my
+        temp = -r(i)
+        do j = 1, my
+            temp = temp + gr(i,j) * uprof(j)
+        end do
+        rjpnew = rjpnew + 2.0d0 * dcda(i) * temp
       end do
-      rjpnew = rjpnew + 2.0d0 * dcda(i) * temp
-  end do
-
-! Actualiza la estimación del parámetro utilizando el paso secante.
-  if ( 1 < iter ) then
-    anext = aold - rjpold * ( anew - aold ) / ( rjpnew - rjpold )
-  end if
-
-  aold = anew
-  anew = anext
-  rjpold = rjpnew
-
-    if ( anew /= 0.0d0 ) then
-      test = abs ( anew - aold ) / anew
-      else
-      test = 0.0d0
-    end if
-    !write ( *, * ) '  Nuevo valor del parametro', anew
-    !write ( *, * ) '  Prueba de convergencia ', test
-    if ( abs ( ( anew - aold ) ) <= abs ( anew ) * tolsec .and. 1 < iter ) then
-    !  write ( *, * ) 'Iteración Secante convergio'
-    go to 40
-    end if
-
-! Termina el bucle de iteración para escribir 'time(n).dat':
+    ! Actualiza la estimación del parámetro utilizando el paso secante.
+      if ( 1 < iter ) then
+        anext = aold - rjpold * ( anew - aold ) / ( rjpnew - rjpold )
+      end if
+      aold = anew
+      anew = anext
+      rjpold = rjpnew
+      if ( anew /= 0.0d0 ) then
+        test = abs ( anew - aold ) / anew
+        else
+        test = 0.0d0
+      end if
+        !write ( *, * ) '  Nuevo valor del parametro', anew
+        !write ( *, * ) '  Prueba de convergencia ', test
+      if ( abs ( ( anew - aold ) ) <= abs ( anew ) * tolsec .and. 1 < iter ) then
+        write ( *, * ) 'Iteracion Secante convergio'
+        go to 40
+      end if
+    ! Termina el bucle de iteración para escribir 'time(n).dat':
   end do 
 
-  write ( *, * ) '  Error en la iteración!'
- 40 continue
 
-end program water7 
+  write ( *, * ) 'La iteracion no convergio'
+  40 continue
+  call cpu_time(cpu2)
+  write ( *, '(a)' ) ' '
+  write ( *, '(a,f8.3,a)' ) 'Tiempo total de ejecucion = ', cpu2 - cpu1, ' segundos.'
+
+end program ns_cylinderflow
 
 
 
@@ -310,16 +271,16 @@ end program water7
 
 
 
-subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
+subroutine setgrd ( ibump, indx, insc, isotri,  long, maxeqn, mx, my, &
   nelemn, neqn, nnodes, node, np, nx, ny, xbleft, xbrite, xlngth )
 
-! setgrd : Construye una malla, numera incógnitas, calcula áreas y puntos por la regla 
-! de cuadratura del punto medio.
-! 
-! Referencia : Programming the Isoparametric Six Node Triangle, Carlos A. Felippa, Boulder, Colorado
-! 
-! Variables utilizadas (input)
-! 
+  ! setgrd : Construye una malla, numera incógnitas, calcula áreas y puntos por la regla 
+  ! de cuadratura del punto medio.
+  ! 
+  ! Referencia : Programming the Isoparametric Six Node Triangle, Carlos A. Felippa, Boulder, Colorado
+  ! 
+  ! Variables utilizadas (input)
+  ! 
   integer :: ibump      ! Define cuando los elementos son isoparametricos (Solo Arriba)
   integer :: my , mx    ! Numero de nodos en x , y   
   integer :: nnodes     ! No. nodos (6 elementos triangulares cuadráticos que usamos)
@@ -332,19 +293,19 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
   real(8) :: xlngth              ! Largo de la region 
   logical :: long       ! Orientacion Vertical(V) u Horizontal (F), depende de nx, ny 
 
-!
-!  Idea principal de la configuracion isoparamétrica ( Mismo parametro en toda la malla) : 
-! 
-! Derivamos una funcion con la misma forma, para definir un elemento geometrico 
-! para describir fuerzas, velocidades, vectores en general
-! Recomiendo (Por prueba y error) que todos los elementos por encima del bump sean isoparametricos.
-!
-! Calculamos la ubicación de los nodos de las esquinas del bump a partir de las coordenadas X.
-! mx = 2*21 - 1 = 41  (no. nodos en x)
-! 
-! (x0 = xbleft)                                           (xf = xbrite)
-! |=======================================================| 
-!                   (xlngth = 10)
+  !
+  !  Idea principal de la configuracion isoparamétrica ( Mismo parametro en toda la malla) : 
+  ! 
+  ! Derivamos una funcion con la misma forma, para definir un elemento geometrico 
+  ! para describir fuerzas, velocidades, vectores en general
+  ! Recomiendo (Por prueba y error) que todos los elementos por encima del bump sean isoparametricos.
+  !
+  ! Calculamos la ubicación de los nodos de las esquinas del bump a partir de las coordenadas X.
+  ! mx = 2*21 - 1 = 41  (no. nodos en x)
+  ! 
+  ! (x0 = xbleft)                                           (xf = xbrite)
+  ! |=======================================================| 
+  !                   (xlngth = 10)
 
   nbleft = nint(xbleft*(mx-1)/xlngth)+1
 
@@ -354,17 +315,17 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
   ' El objeto se extiende desde ',xbleft,' en el nodo ',nbleft, & 
   ' a ',xbrite,' en el nodo ',nbrite
 
-! Los nodos son los puntos de unión de cada elemento . 
-! La solución del sistema completo sigue las reglas de los problemas discretos. 
-! El sistema completo se forma por ensamblaje de cada nodo
+  ! Los nodos son los puntos de unión de cada elemento . 
+  ! La solución del sistema completo sigue las reglas de los problemas discretos. 
+  ! El sistema completo se forma por ensamblaje de cada nodo
 
 
-! Determina si la región es larga o delgada 
-! Esto determinará la numeración de los nodos y elementos.
+  ! Determina si la región es larga o delgada 
+  ! Esto determinará la numeración de los nodos y elementos.
 
-! nx = 21       ! Espaciado de los nodos en x (hay 2*nx+1) 
-! ny = 7        ! Espaciado de los nodos en y (hay 2*ny+1) 
-! Como ny < nx entonces tomamos una ordenacion vertical 
+  ! nx = 21       ! Espaciado de los nodos en x (hay 2*nx+1) 
+  ! ny = 7        ! Espaciado de los nodos en y (hay 2*ny+1) 
+  ! Como ny < nx entonces tomamos una ordenacion vertical 
 
   if ( ny < nx ) then
     long = .true.
@@ -374,9 +335,9 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
   !  write(*,*)'Orientacion Horizontal'
   end if
 
-!
-!  Estrategia isoparametrica
-!
+  !
+  !  Estrategia isoparametrica
+  !
 
   if ( ibump == 0 ) then
   !  write(*,*)'Sin elementos isoparametricos'
@@ -391,15 +352,6 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
     stop
   end if
 
-! 
-! Asignamos los nodos a nuestra malla de elementos triangulares
-!
-!              ___  ___
-!             /\  /\  /\   
-!            /__\/__\/__\ 
-!           /\  /\  /\  /\ 
-! (nbleft) /__\/__\/__\/__\ (nbrite)
-! 
 
   neqn = 0
   ielemn = 0
@@ -425,8 +377,8 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
     jcnt = mod(jc,2)
 
 
-! Si tanto el recuento de filas como el de columnas son impares y no estamos en la última 
-! fila o columna superior, entonces podemos definir dos nuevos elementos triangulares basados en el nodo.
+  ! Si tanto el recuento de filas como el de columnas son impares y no estamos en la última 
+  ! fila o columna superior, entonces podemos definir dos nuevos elementos triangulares basados en el nodo.
 
   ! Por ordenación horizontal, dada la siguiente disposición de nodos, por ejemplo:
 
@@ -564,56 +516,56 @@ subroutine setgrd ( ibump, indx, insc, isotri, iwrite, long, maxeqn, mx, my, &
       end if
     end if
 
-! Triangulo isoparametrico (6 nodos)
-! Tiene un nodo en cada vertice y en los puntos medios 
-!             
-!             1 
-!        4 _ / \ _ 6    
-!       2 _ / _ \ _ 3  
-!             5    
-!  Podemos reducir nuestro grid como un polinomio cuadratico 
-!  f(x,y) = c0 + c1x + c2y + c3x^2 + c4xy + c5y^2
-!  en principio resolvemos para los coeficientes en terminos de las coordenadas 
-!  (x1, y1), (x2 , y2) ... (x6, y6) 
-!  x = N1x1 + N2x2 + N3x3 + N4x4 + N5x5 + N6x6
-!  y = N1y1 + N2y2 + N3y3 + N4y4 + N5y5 + N6y6
+  ! Triangulo isoparametrico (6 nodos)
+  ! Tiene un nodo en cada vertice y en los puntos medios 
+  !             
+  !             1 
+  !        4 _ / \ _ 6    
+  !       2 _ / _ \ _ 3  
+  !             5    
+  !  Podemos reducir nuestro grid como un polinomio cuadratico 
+  !  f(x,y) = c0 + c1x + c2y + c3x^2 + c4xy + c5y^2
+  !  en principio resolvemos para los coeficientes en terminos de las coordenadas 
+  !  (x1, y1), (x2 , y2) ... (x6, y6) 
+  !  x = N1x1 + N2x2 + N3x3 + N4x4 + N5x5 + N6x6
+  !  y = N1y1 + N2y2 + N3y3 + N4y4 + N5y5 + N6y6
 
 
-! { Ux(xy) }   [N1, 0,  N2, 0,  N3, 0,  N4, 0,  N5, 0,  N6, 0 ] x [T]
-! { Uy(xy) } = [0,  N1, 0,  N2, 0,  N3, 0,  N4, 0,  N5, 0 , N6] 
+  ! { Ux(xy) }   [N1, 0,  N2, 0,  N3, 0,  N4, 0,  N5, 0,  N6, 0 ] x [T]
+  ! { Uy(xy) } = [0,  N1, 0,  N2, 0,  N3, 0,  N4, 0,  N5, 0 , N6] 
 
-! T = [ Ux1, Uy1, Ux2, Uy2, Ux3, Uy3, Ux4, Uy4, Ux5, Uy5, Ux6, Uy6 ]
-! ielemn max : 240
+  ! T = [ Ux1, Uy1, Ux2, Uy2, Ux3, Uy3, Ux4, Uy4, Ux5, Uy5, Ux6, Uy6 ]
+  ! ielemn max : 240
 
-!
-! Límite izquierdo, velocidades horizontales y verticales especificadas.
-!
+  !
+  ! Límite izquierdo, velocidades horizontales y verticales especificadas.
+  !
     if ( ic == 1.and.1 < jc .and. jc < my ) then
       indx(ip,1) = -1
       indx(ip,2) = -1
-!
-! Límite derecho, velocidades horizontales desconocidas, vertical
-! velocidades especificadas
-!
+  !
+  ! Límite derecho, velocidades horizontales desconocidas, vertical
+  ! velocidades especificadas
+  !
     else if ( ic == mx.and.1 < jc .and. jc < my) then
       neqn = neqn+1
       indx(ip,1) = neqn
       indx(ip,2) = 0
-!
-! Límite inferior, con triángulo isoperimétrico
-!
+  !
+  ! Límite inferior, con triángulo isoperimétrico
+  !
     else if ( jc == 1 .and. isotri(ielemn) == 1 ) then
       indx(ip,1) = -2
       indx(ip,2) = -2
-!
-!  De lo contrario, sólo una pared
-!
+  !
+  !  De lo contrario, sólo una pared
+  !
     else if ( ic == 1 .or. ic == mx .or. jc == 1 .or. jc == my ) then
       indx(ip,1) = 0
       indx(ip,2) = 0
-!
-!  En caso contrario, un nodo interior normal en el que ambas velocidades son desconocidas
-!
+  !
+  !  En caso contrario, un nodo interior normal en el que ambas velocidades son desconocidas
+  !
     else
       neqn = neqn+2
       indx(ip,1) = neqn-1
@@ -665,17 +617,18 @@ end subroutine setgrd
 
 
 
-subroutine setxy ( iwrite, long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
-! setxy : Establecemos las coordenadas normales de la malla basandonos el el valor del parametro (ypert)
-! Referencia : Finite Element Analysis, P. Seshu, 5.3.3 Natural Coordinates Triangular Elements pg. 165 
+subroutine setxy (  long, mx, my, np, nx, ny, xc, xlngth, yc, ylngth, ypert )
+  ! setxy : Establecemos las coordenadas normales de la malla basandonos el el valor del parametro (ypert)
+  ! Referencia : Finite Element Analysis, P. Seshu, 5.3.3 Natural Coordinates Triangular Elements pg. 165 
 
-integer :: my              ! mx : Numero de nodos en la direccion y (2ny - 1)
-integer :: mx              ! my : Numero de nodos en la direccion x (2nx - 1)
-real(8) :: xc(np)          ! xc : Las coordenada x de los nodos (Vector xc(np))
-real(8) :: yc(np)          ! yc : Las coordenadas y de los nodos (Vecor yc(np))
-real(8) :: xlngth, ylngth  ! Largo y ancho del cilindro (Def 10,3)
-real(8) :: ypert           ! ypert : La variable parametro que contiene nuestra altura del puente 
-logical :: long            ! Orientacion Vertical(V) u Horizontal (F), depende de nx, ny 
+  integer :: my              ! mx : Numero de nodos en la direccion y (2ny - 1)
+  integer :: mx              ! my : Numero de nodos en la direccion x (2nx - 1)
+  real(8) :: xc(np)          ! xc : Las coordenada x de los nodos (Vector xc(np))
+  real(8) :: yc(np)          ! yc : Las coordenadas y de los nodos (Vecor yc(np))
+  real(8) :: xlngth, ylngth  ! Largo y ancho del cilindro (Def 10,3)
+  real(8) :: ypert           ! ypert : La variable parametro que contiene nuestra altura del puente
+  real(8) :: ybot, ylo
+  logical :: long            ! Orientacion Vertical(V) u Horizontal (F), depende de nx, ny 
 
 
   ! Inicio  
@@ -780,10 +733,10 @@ end subroutine setxy
 
 
 
-subroutine setqud ( area, isotri, iwrite, nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
-! setqud : Establece la información de la regla de cuadratura del punto medio
-! (Sencillamente calculamos el area y el punto medio de nuestros triangulos en la malla)
-! Referencia : Finite Element Analysis, P. Seshu, 5.3.3 Natural Coordinates Triangular Elements pg. 165 
+subroutine setqud ( area, isotri,  nelemn, nnodes, node, np, nquad, xc, xm, yc, ym )
+  ! setqud : Establece la información de la regla de cuadratura del punto medio
+  ! (Sencillamente calculamos el area y el punto medio de nuestros triangulos en la malla)
+  ! Referencia : Finite Element Analysis, P. Seshu, 5.3.3 Natural Coordinates Triangular Elements pg. 165 
 
   integer :: nelemn ! 2*(nx - 1)*(ny -1) ! nx = 21 , ny = 7 (Numero de elementos) 
   integer :: nnodes ! No. nodos (6 elementos triangulares cuadráticos que usamos)
@@ -812,7 +765,6 @@ subroutine setqud ( area, isotri, iwrite, nelemn, nnodes, node, np, nquad, xc, x
     ip1 = node(it,1) ! 1,1,3,3,5,5,7,7,9,9,11,11 ... 505,505
     ip2 = node(it,2) ! 3,29,5,31,7,33,9,35,11,37 ... 533
     ip3 = node(it,3) ! 29, 27, 31,29,33,31,35... 531
-
     ! Entonces vamos a reescribir nuestro arreglo de coordenadas en x,y como el punto medio entre
     ! estos dos puntos donde ahora se encuentran nuestros nodos. 
 
@@ -826,32 +778,23 @@ subroutine setqud ( area, isotri, iwrite, nelemn, nnodes, node, np, nquad, xc, x
 
     if ( isotri(it) == 0 ) then ! Si no es isoparametrico calculamos el punto medio 
     ! Ver pagina 214 de Referencia
-
       xm(it,1) = 0.5d0*(x1 + x2)
       ym(it,1) = 0.5d0*(y1 + y2)
-
       xm(it,2) = 0.5d0*(x2 + x3)
       ym(it,2) = 0.5d0*(y2 + y3)
-
       xm(it,3) = 0.5d0*(x3 + x1)
       ym(it,3) = 0.5d0*(y3 + y1)
-      
       area(it) = 0.5d0*abs((y1 + y2)*(x2 - x1)+(y2 + y3)*(x3 - x2)+(y3 + y1)*(x1 - x3))
     
     else ! Para cada elemento isoparametrico definimos que sencillamente esta a la mitad 
          ! (Triangulo de 0.5, 1.0, 0.5)
-
       xm(it,1) = 0.5d0
       ym(it,1) = 0.5d0
-
       xm(it,2) = 1.0d0
       ym(it,2) = 0.5d0
-      
       xm(it,3) = 0.5d0
       ym(it,3) = 0.0d0
-     
       area(it) = 0.5d0
-
     end if
 
   end do
@@ -886,15 +829,15 @@ end subroutine setqud
 
 
 subroutine setbas ( isotri, nelemn, nnodes, node, np, nquad, phi, psi, xc, xm, yc, ym )
-! setbas : Evalúa las funciones base en cada punto de integración.
-!  Necesito 
-! - Calcular la transformación de elementos (Jacobiano)
-! - Evalúa las funciones (Base cuadratica)
-! - Extrapolar la transformacion en el triangulo 
-! 
-! Referencias :
-! - 6 nodes me 478 finite element method, chapter 6. isoparametric formulation
-! - https://www.youtube.com/watch?v=gJzqCaOEqsA  (Minuto 28 - : 37)
+  ! setbas : Evalúa las funciones base en cada punto de integración.
+  !  Necesito 
+  ! - Calcular la transformación de elementos (Jacobiano)
+  ! - Evalúa las funciones (Base cuadratica)
+  ! - Extrapolar la transformacion en el triangulo 
+  ! 
+  ! Referencias :
+  ! - 6 nodes me 478 finite element method, chapter 6. isoparametric formulation
+  ! - https://www.youtube.com/watch?v=gJzqCaOEqsA  (Minuto 28 - : 37)
 
   integer :: nelemn         ! El numero de elementos 
   integer :: nnodes         ! El número de nodos por elemento (6) Eelementos triangulares cuadráticos 
@@ -974,32 +917,32 @@ end subroutine setbas
 
 
 subroutine trans ( det, etax, etay, it, nelemn, nnodes, node, np, xc, xix, xiy, xq, yc, yq )
-! trans : calcula el mapeo de transformación de elementos.
-! 
-! Referencias : 
-! - 6 nodes me 478 finite element method, chapter 6. isoparametric formulation
-! - Finite Element Analysis, P. Seshu, 5.4.8 Natural Coordinates Triangular Elements pg. 193
-! 
-! El mapeo de transformación de elementos asigna el elemento de referencia 
-! a un elemento isoparamétrico particular. La rutina también genera el determinante 
-! y las derivadas parciales de la transformación.
-! 
-! Ejemplo : 
-! Diagrama del mapeo desde nuestro punto de referencia hasta el elemento isoparamétrico:
-!
-!
-!          2                           2
-!         /|                          / \
-! P.ref  4 5       ===== >  Elm.iso  4   5
-!       /  |                        /     \
-!      1-6-3                       1--6----3
-!
-!       Xi                              X
-!
-!    La forma del mapeo cuadratico seria : 
-!
-!      x = a1 * xi^2 + b1 * xi * eta + c1 * eta^2 + d1 * xi + e1 * eta + f1
-!      y = a2 * xi^2 + b2 * xi * eta + c2 * eta^2 + d2 * xi + e2 * eta + f2
+  ! trans : calcula el mapeo de transformación de elementos.
+  ! 
+  ! Referencias : 
+  ! - 6 nodes me 478 finite element method, chapter 6. isoparametric formulation
+  ! - Finite Element Analysis, P. Seshu, 5.4.8 Natural Coordinates Triangular Elements pg. 193
+  ! 
+  ! El mapeo de transformación de elementos asigna el elemento de referencia 
+  ! a un elemento isoparamétrico particular. La rutina también genera el determinante 
+  ! y las derivadas parciales de la transformación.
+  ! 
+  ! Ejemplo : 
+  ! Diagrama del mapeo desde nuestro punto de referencia hasta el elemento isoparamétrico:
+  !
+  !
+  !          2                           2
+  !         /|                          / \
+  ! P.ref  4 5       ===== >  Elm.iso  4   5
+  !       /  |                        /     \
+  !      1-6-3                       1--6----3
+  !
+  !       Xi                              X
+  !
+  !    La forma del mapeo cuadratico seria : 
+  !
+  !      x = a1 * xi^2 + b1 * xi * eta + c1 * eta^2 + d1 * xi + e1 * eta + f1
+  !      y = a2 * xi^2 + b2 * xi * eta + c2 * eta^2 + d2 * xi + e2 * eta + f2
 
   integer :: nelemn ! El numero de elementos 
   integer :: nnodes ! El número de nodos por elemento (6) Eelementos triangulares cuadráticos 
@@ -1072,64 +1015,49 @@ subroutine trans ( det, etax, etay, it, nelemn, nnodes, node, np, xc, xix, xiy, 
   y5 = yc(i5)
   x6 = xc(i6)
   y6 = yc(i6)
+  !
+  ! Establecer los coeficientes en la transformación:
+  !
+  !  X = X(XI,ETA)
+  !  Y = Y(XI,ETA)
+  !
+  a1 = 2.0D+00*x3-4.0D+00*x6+2.0D+00*x1
+  b1 = -4.0D+00*x3-4.0D+00*x4+4.0D+00*x5+4.0D+00*x6
+  c1 = 2.0D+00*x2+2.0D+00*x3-4.0D+00*x5
+  d1 = -3.0D+00*x1-x3+4.0D+00*x6
+  e1 = -x2+x3+4.0D+00*x4-4.0D+00*x6
 
-!
-! Establecer los coeficientes en la transformación:
+  a2 = 2.0D+00*y3-4.0D+00*y6+2.0D+00*y1
+  b2 = -4.0D+00*y3-4.0D+00*y4+4.0D+00*y5+4.0D+00*y6
+  c2 = 2.0D+00*y2+2.0D+00*y3-4.0D+00*y5
+  d2 = -3.0D+00*y1-y3+4.0D+00*y6
+  e2 = -y2+y3+4.0D+00*y4-4.0D+00*y6
 
-!  x = x(xi,x)
-
-  a1 = 2.0d0*x3 - 4.0d0*x6 + 2.0d0*x1
-  
-  b1 = -4.0d0*x3 - 4.0d0*x4 + 4.0d0*x5 + 4.0d0*x6
-  
-  c1 = 2.0d0*x2 + 2.0d0*x3 - 4.0d0*x5
-  
-  d1 = -3.0d0*x1 - x3 + 4.0d0*x6
-  
-  e1 = -x2 + x3 + 4.0d0*x4 - 4.0d0*x6
-
-
-!  y = y(xi,x)
-
-
-  a2 = 2.0d0*y3 - 4.0d0*y6 + 2.0d0*y1
-  
-  b2 = -4.0d0*y3 - 4.0d0*y4 + 4.0d0*y5 + 4.0d0*y6
-  
-  c2 = 2.0d0*y2 + 2.0d0*y3 - 4.0d0*y5
-  
-  d2 = -3.0d0*y1 - y3 + 4.0d0*y6
-  
-  e2 = -y2 + y3 + 4.0d0*y4 - 4.0d0*y6
-
-!
-! Calcular derivadas parciales d x/deta, d x/dxi, d y/deta/ dy/d xi,
-! en el punto (xq,yq) en el triángulo de referencia
-! Este es el jacobiano:
-!   ( dx/dxi    dx/deta )
-!   ( dy/dxi    dy/deta )
-!
+  !
+  ! Calcular derivadas parciales d x/deta, d x/dxi, d y/deta/ dy/d xi,
+  ! en el punto (xq,yq) en el triángulo de referencia
+  ! Este es el jacobiano:
+  !   ( dx/dxi    dx/deta )
+  !   ( dy/dxi    dy/deta )
+  !
   dxdxi = 2.0d0*a1*xq + b1*yq + d1
- 
   dxdeta = b1*xq + 2.0d0*c1*yq + e1
- 
   dydxi = 2.0d0*a2*xq + b2*yq + d2
- 
   dydeta = b2*xq + 2.0d0*c2*yq + e2
 
-! 
-! Calcule el determinante de la transformación
-!
+  ! 
+  ! Calcule el determinante de la transformación
+  !
 
   det =  (2.0d0*a1*b2-2.0d0*a2*b1)*xq*xq +(4.0d0*a1*c2-4.0d0*a2*c1)*xq*yq &
         +(2.0d0*b1*c2-2.0d0*b2*c1)*yq*yq +(2.0d0*a1*e2+b2*d1-b1*d2-2.0d0*a2*e1)*xq &
         +(2.0d0*c2*d1+b1*e2-b2*e1-2.0d0*c1*d2)*yq+d1*e2-d2*e1
-!
-! Calculamos el Jacobiano inverso 
-! 
-!    ( dxi/dx   dxi/dy  )
-!    ( deta/dx  deta/dy )
-!
+  !
+  ! Calculamos el Jacobiano inverso 
+  ! 
+  !    ( dxi/dx   dxi/dy  )
+  !    ( deta/dx  deta/dy )
+  !
 
   xix  =   dydeta  / det
   xiy  = - dxdeta / det
@@ -1143,9 +1071,9 @@ end subroutine trans
 
 
 subroutine qbf ( xq, yq, it, in, bb, bx, by, nelemn, nnodes, node, np, xc, yc )
-! qbf : evalúa las funciones de base cuadrática.
-! Referencias : 
-! Finite Elements for the (Navier) Stokes Equations - John Burkardt, Numerical Analysis Seminar
+  ! qbf : evalúa las funciones de base cuadrática.
+  ! Referencias : 
+  ! Finite Elements for the (Navier) Stokes Equations - John Burkardt, Numerical Analysis Seminar
 
 
   integer :: nelemn ! El numero de elementos 
@@ -1179,14 +1107,14 @@ subroutine qbf ( xq, yq, it, in, bb, bx, by, nelemn, nnodes, node, np, xc, yc )
   real(8) :: bx
   real(8) :: by
  
- ! xq, yq,las coordenadas de un punto en el triángulo de referencia.
+  ! xq, yq,las coordenadas de un punto en el triángulo de referencia.
   real(8) :: xq
   real(8) :: yq
 
-! Vamos a constuir las funciones de base lineal
-! Las funciones de base para la presión se definen en el triángulo de tres vértices
-! triángulo T = {(x1 , y1 ), (x2 , y2 ), (x3 , y3 )}. La base φ1 (x, y ) es 1 en
-! vértice 1, 0 en los otros dos vértices, y lineal sobre T .
+  ! Vamos a constuir las funciones de base lineal
+  ! Las funciones de base para la presión se definen en el triángulo de tres vértices
+  ! triángulo T = {(x1 , y1 ), (x2 , y2 ), (x3 , y3 )}. La base φ1 (x, y ) es 1 en
+  ! vértice 1, 0 en los otros dos vértices, y lineal sobre T .
 
 
   if ( in <= 3 ) then ! Si sigue perteneciendo a un triangulo de 3 vertices 
@@ -1222,10 +1150,10 @@ subroutine qbf ( xq, yq, it, in, bb, bx, by, nelemn, nnodes, node, np, xc, yc )
   end if
 
 
-! Al igual que para las funciones de base lineal, podemos encontrar una función lineal
-! que es cero a lo largo de cualquier línea que elijamos. Por tanto, existe una función lineal
-! que es cero en N2 y N1 (y, por tanto, también en N12).
-! Otra función lineal es cero en N23 y N31, y así sucesivamente.
+  ! Al igual que para las funciones de base lineal, podemos encontrar una función lineal
+  ! que es cero a lo largo de cualquier línea que elijamos. Por tanto, existe una función lineal
+  ! que es cero en N2 y N1 (y, por tanto, también en N12).
+  ! Otra función lineal es cero en N23 y N31, y así sucesivamente.
 
   return
 end subroutine qbf 
@@ -1234,18 +1162,18 @@ end subroutine qbf
 
 
 subroutine refqbf ( x, y, in, bb, bx, by, etax, etay, xix, xiy )
-! refqbf :  evalúa las funciones de base cuadrática en el triángulo de referencia!
-! Referencias : Finite Elements: Basis functions triangles: quadratic elements (Presentacion) 
-! 
-! 
-!  Ejemplo de nuestro triangulo 
-!
-!    3
-!    |\
-!    6 5
-!    |  \
-!    1-4-2
-!
+  ! refqbf :  evalúa las funciones de base cuadrática en el triángulo de referencia!
+  ! Referencias : Finite Elements: Basis functions triangles: quadratic elements (Presentacion) 
+  ! 
+  ! 
+  !  Ejemplo de nuestro triangulo 
+  !
+  !    3
+  !    |\
+  !    6 5
+  !    |  \
+  !    1-4-2
+  !
 
   !  bb, bx, by, el valor de la función base y sus derivadas x e y en el punto (x,y)
   real(8) :: bb
@@ -1320,22 +1248,22 @@ end subroutine refqbf
 
 
 function bsp ( it, iq, id, nelemn, nnodes, node, np, xc, xq, yc, yq )
-! bsp :  evalúa la función de base lineal asociada con la presión.
-! Referencia  :
-! 
-! Ejemplo del elemento de referencia local:
-!
-!    ^
-!    |
-!    1  3
-!    |  |\
-!    |  | \
-!    |  |  \
-!    |  |   \
-!    0  1----2
-!    |
-!    +--0----1---->
-!
+  ! bsp :  evalúa la función de base lineal asociada con la presión.
+  ! Referencia  :
+  ! 
+  ! Ejemplo del elemento de referencia local:
+  !
+  !    ^
+  !    |
+  !    1  3
+  !    |  |\
+  !    |  | \
+  !    |  |  \
+  !    |  |   \
+  !    0  1----2
+  !    |
+  !    +--0----1---->
+  !
 
 
   integer :: nelemn    ! Numero de elementos 
@@ -1361,14 +1289,14 @@ function bsp ( it, iq, id, nelemn, nnodes, node, np, xc, xq, yc, yq )
   real(8) :: yq        ! Coord. y del punto triangular de referencia 
 
 
-!  L1, L2, L3 son los índices de nodos locales apropiados.
-!
+  !  L1, L2, L3 son los índices de nodos locales apropiados.
+  !
   l1 = iq
   l2 = i4_wrap ( iq + 1, 1, 3 )
   l3 = i4_wrap ( iq + 2, 1, 3 )
-!
-!  G1, G2, G3 son los índices de nodos globales.
-!
+  !
+  !  G1, G2, G3 son los índices de nodos globales.
+  !
   g1 = node(it,l1)
   g2 = node(it,l2)
   g3 = node(it,l3)
@@ -1397,21 +1325,21 @@ end function bsp
 
 
 function refbsp ( xq, yq, iq )
-! refbsp : evalua las funciones de base lineal en un triángulo de referencia.
-! 
-! (Ejemplo)
-! El triangulo de referencia dado aquí no es el mejor. los nodos no se dan en las posiciones habituales,
-! y se enumeran en orden en el sentido de las agujas del reloj en lugar de orden en el sentido 
-! contrario a las agujas del reloj
-! 
-!   Diagrama:
-! 
-!        2
-!       /|
-!      / |
-!     /  |
-!    1---3
-!
+  ! refbsp : evalua las funciones de base lineal en un triángulo de referencia.
+  ! 
+  ! (Ejemplo)
+  ! El triangulo de referencia dado aquí no es el mejor. los nodos no se dan en las posiciones habituales,
+  ! y se enumeran en orden en el sentido de las agujas del reloj en lugar de orden en el sentido 
+  ! contrario a las agujas del reloj
+  ! 
+  !   Diagrama:
+  ! 
+  !        2
+  !       /|
+  !      / |
+  !     /  |
+  !    1---3
+  !
 
 
   integer :: iq      ! Indice de una función base en el triángulo de referencia.
@@ -1434,31 +1362,31 @@ end function refbsp
 
 
 function i4_wrap( ival, ilo, ihi )
-! i4_wrap : Hace que un I4 a estar entre los límites dados al envolver.
-!
-!  Ejemplo:
-!
-!    ilo = 4, ihi = 8
-!
-!    I    Valor
-!
-!    -2     8
-!    -1     4
-!     0     5
-!     1     6
-!     2     7
-!     3     8
-!     4     4
-!     5     5
-!     6     6
-!     7     7
-!     8     8
-!     9     4
-!    10     5
-!    11     6
-!    12     7
-!    13     8
-!    14     4
+  ! i4_wrap : Hace que un I4 a estar entre los límites dados al envolver.
+  !
+  !  Ejemplo:
+  !
+  !    ilo = 4, ihi = 8
+  !
+  !    I    Valor
+  !
+  !    -2     8
+  !    -1     4
+  !     0     5
+  !     1     6
+  !     2     7
+  !     3     8
+  !     4     4
+  !     5     5
+  !     6     6
+  !     7     7
+  !     8     8
+  !     9     4
+  !    10     5
+  !    11     6
+  !    12     7
+  !    13     8
+  !    14     4
 
   integer :: i4_modp  ! Funcion : Devuelve el resto no negativo de la división I4.
   integer :: i4_wrap  ! Valor de la funcion 
@@ -1490,21 +1418,21 @@ end function i4_wrap
 
 
 function i4_modp ( i, j )
-! i4_modp : Devuelve el resto no negativo de la división (modulo) i4.
-! Ejemplo Algoritmo:
-! si  
-!   nrem = i4_modp (i, j)
-!   nmult = (i - nrem) / j
-! entonces
-!   i = j * nmult + nrem
-! (donde nrem siempre es no negativo) 
-! La función mod calcula un resultado con el mismo signo que la cantidad que se divide. 
-! por lo tanto, supongamos que tenemos un ángulo a y nos queremos asegurar
-! de que estaba entre 0 y 360.
-! 
-! Entonces mod(a,360) funcionaría, si a fuera positivo, pero si a
-! fue negativo, el resultado estaría entre -360 y 0.
-! por otro lado, i4_modp(a,360) está siempre entre 0 y 360, siempre :) 
+  ! i4_modp : Devuelve el resto no negativo de la división (modulo) i4.
+  ! Ejemplo Algoritmo:
+  ! si  
+  !   nrem = i4_modp (i, j)
+  !   nmult = (i - nrem) / j
+  ! entonces
+  !   i = j * nmult + nrem
+  ! (donde nrem siempre es no negativo) 
+  ! La función mod calcula un resultado con el mismo signo que la cantidad que se divide. 
+  ! por lo tanto, supongamos que tenemos un ángulo a y nos queremos asegurar
+  ! de que estaba entre 0 y 360.
+  ! 
+  ! Entonces mod(a,360) funcionaría, si a fuera positivo, pero si a
+  ! fue negativo, el resultado estaría entre -360 y 0.
+  ! por otro lado, i4_modp(a,360) está siempre entre 0 y 360, siempre :) 
 
   integer :: i         ! El número a dividir
   integer :: i4_modp   ! La funcion esta 
@@ -1530,10 +1458,10 @@ function i4_modp ( i, j )
 end function i4_modp
 
 
-subroutine setlin ( iline, indx, iwrite, long, mx, my, np, nx, ny,  xlngth, xprof )
-! setlin : Determina números de nodos desconocidos (incognitas) a lo largo de la línea de perfil.
-! Para nuestro problema, la línea de perfil tiene la ecuación x = xprof.
-     
+subroutine setlin ( iline, indx,  long, mx, my, np, nx, ny,  xlngth, xprof )
+  ! setlin : Determina números de nodos desconocidos (incognitas) a lo largo de la línea de perfil.
+  ! Para nuestro problema, la línea de perfil tiene la ecuación x = xprof.
+      
   integer :: nx ! Espaciado de los nodos en x (hay 2*nx+1) 
   integer :: ny ! Espaciado de los nodos en y (hay 2*ny+1) 
   integer :: my ! my = 2*ny -1  Numero de nodos en y 
@@ -1546,15 +1474,14 @@ subroutine setlin ( iline, indx, iwrite, long, mx, my, np, nx, ny,  xlngth, xpro
   ! yc(ip) : Coordenadas y de los nodos 
   integer :: ip
   integer :: itemp       ! Numero de nodos en la linea de perfil
-  integer :: iwrite      ! Condicional para escribir en terminal 
   integer :: nodex0      ! Encima del nodo  , nodex0
   real(8) :: xlngth     ! Largo de la region (xf - x0)
   real(8) :: xprof      ! Cord x en la que se mide el perfil
   logical :: long       ! Orientacion Vertical(V) u Horizontal (F), depende de nx, ny 
 
-!
-!  Determina el numero de nodos en la linea de perfil
-!
+  !
+  !  Determina el numero de nodos en la linea de perfil
+  !
   itemp = nint ( ( 2.0d0 * real ( nx - 1, kind = 8 ) * xprof ) / xlngth )
 
   if ( long ) then ! Si la orientacion es Vertical 
@@ -1595,12 +1522,12 @@ end subroutine setlin
 
 
 subroutine setban ( indx, insc, maxrow, nband, nelemn, nlband, nnodes, node, np, nrow )
-! setban : Calcula el ancho de media banda 
-! Esto sólo se aplicaría para un programa de EF simple en el que los nodos del modelo siempre 
-! están etiquetados de 1 a n, cada nodo tiene el mismo número de grados de libertad (f)
-! y las filas y columnas de la matriz global también se ordenan en grupos de (f) de 1 a n
-! Referencias : (Este la verdad no le entiendo mucho, pero si no me da error) :( 
-! El codigo esta en Programming the Isoparametric Six Node Triangle, Carlos A. Felippa
+  ! setban : Calcula el ancho de media banda 
+  ! Esto sólo se aplicaría para un programa de EF simple en el que los nodos del modelo siempre 
+  ! están etiquetados de 1 a n, cada nodo tiene el mismo número de grados de libertad (f)
+  ! y las filas y columnas de la matriz global también se ordenan en grupos de (f) de 1 a n
+  ! Referencias : (Este la verdad no le entiendo mucho, pero si no me da error) :( 
+  ! El codigo esta en Programming the Isoparametric Six Node Triangle, Carlos A. Felippa
 
 
   integer :: nelemn ! 2*(nx - 1)*(ny -1) ! Numero de elementos 
@@ -1631,25 +1558,25 @@ subroutine setban ( indx, insc, maxrow, nband, nelemn, nlband, nnodes, node, np,
           do iuk = 1, 3
             if (iuk == 3) then
               i = insc(ip)
-               else
-                i = indx(ip,iuk)
+              else
+              i = indx(ip,iuk)
+            end if
+            if ( 0 < i ) then
+              do iqq = 1, nnodes
+                ipp = node(it,iqq)
+                do iukk = 1, 3
+                  if (iukk == 3) then
+                    j = insc(ipp)
+                    else
+                    j = indx(ipp,iukk)
                   end if
-                    if ( 0 < i ) then
-                      do iqq = 1, nnodes
-                        ipp = node(it,iqq)
-                        do iukk = 1, 3
-                        if (iukk == 3) then
-                        j = insc(ipp)
-                        else
-                        j = indx(ipp,iukk)
-                        end if
-                    if ( 0 < j ) then
-                  nlband = max(nlband,j-i)
-              end if
-            end do
+                  if ( 0 < j ) then
+                    nlband = max(nlband,j-i)
+                  end if
+                end do
+              end do
+            end if
           end do
-        end if
-      end do
     end do
   end do
 
@@ -1678,16 +1605,16 @@ end subroutine setban
 
 subroutine nstoke ( a, area, f, g, indx, insc, isotri, maxnew,maxrow, nband, nelemn, neqn, nlband, & 
   nnodes, node, np, nquad, nrow, numnew, phi, psi, reynld, tolnew, xc, xm, yc, ym )
-! 
-! nstoke : Resuelve la ecuación de Navier Stokes utilizando elementos de Taylor-Hood.
-! Referencias : Basicamente es este codigo del Pitón trasladado a Fortran con mucho cafe 
-! Documentacion 
-! https://fenicsproject.org/olddocs/dolfin/2016.2.0/python/demo/documented/stokes-taylor-hood/
-! Codigo fuente 
-! https://bitbucket.org/fenics-project/dolfin/src/master/python/src/
-! Tambien tome ejemplos de esto 
-! https://www.mathworks.com/matlabcentral/fileexchange/49169-triangular-taylor-hood-finite-elements
-  
+  ! 
+  ! nstoke : Resuelve la ecuación de Navier Stokes utilizando elementos de Taylor-Hood.
+  ! Referencias : Basicamente es este codigo del Pitón trasladado a Fortran con mucho cafe 
+  ! Documentacion 
+  ! https://fenicsproject.org/olddocs/dolfin/2016.2.0/python/demo/documented/stokes-taylor-hood/
+  ! Codigo fuente 
+  ! https://bitbucket.org/fenics-project/dolfin/src/master/python/src/
+  ! Tambien tome ejemplos de esto 
+  ! https://www.mathworks.com/matlabcentral/fileexchange/49169-triangular-taylor-hood-finite-elements
+    
   integer :: maxrow ! 27*ny La ultima fila de la matriz A  
   integer :: nelemn ! 2*mx*my + nx*ny Numero maximo de equaciones y funciones 
   integer :: neqn   ! Contador del numero de ecuaciones 
@@ -1738,7 +1665,7 @@ subroutine nstoke ( a, area, f, g, indx, insc, isotri, maxnew,maxrow, nband, nel
   real(8) :: yc(np)            ! Coordenada y de los nodos 
   real(8) :: ym(nelemn,nquad)  ! Cord y de los puntos de cuadratura de cada elemento
 
-! G contiene una estimación inicial de la solución.
+  ! G contiene una estimación inicial de la solución.
   do iter = 1, maxnew ! Lo definimos como 10 
     numnew = numnew + 1
     itype = -1
@@ -1747,7 +1674,7 @@ subroutine nstoke ( a, area, f, g, indx, insc, isotri, maxnew,maxrow, nband, nel
     call linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nelemn, neqn,  & 
       nlband, nnodes, node, np, nquad, nrow, phi, psi, reynld, xc, xm, yc, ym )
 
-!  Comprobamos la convergencia.
+  !  Comprobamos la convergencia.
 
     g(1:neqn) = g(1:neqn) - f(1:neqn)
     diff = abs ( g(idamax(neqn,g,1)) )
@@ -1759,13 +1686,13 @@ subroutine nstoke ( a, area, f, g, indx, insc, isotri, maxnew,maxrow, nband, nel
 
     ! Converge 
     if ( diff <= tolnew ) then
-      !write(*,*) ' nstoke convergio con ', iter , 'iteraciones'
+    !  write(*,*) ' nstoke convergio con ', iter , 'iteraciones'
       exit
     end if
     
     ! Hemos llegado al numero maximo de iteracion (Aumentar o cambiar valores)
     if ( iter == maxnew ) then 
-      write(*,*) '  nstoke fallo!'
+    !  write(*,*) '  nstoke fallo!'
       stop
     end if
 
@@ -1780,11 +1707,11 @@ end subroutine nstoke
 subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nelemn, neqn, &
                   nlband, nnodes, node, np, nquad, nrow, phi, psi, reynld, xc, xm, yc, ym )
 
-! linsys : Resuelve las ecuaciones de Navier - Stokes linealizadas 
-!
-!    itype = -1 para soluciones de las ecuaciones de navier stokes 
-!    itype = -2 para soluciones de las ecuaciones de sensivilidad 
-!
+  ! linsys : Resuelve las ecuaciones de Navier - Stokes linealizadas 
+  !
+  !    itype = -1 para soluciones de las ecuaciones de navier stokes 
+  !    itype = -2 para soluciones de las ecuaciones de sensivilidad 
+  !
 
   integer :: maxrow ! 27*ny , la ultima fila de la matriz A  
   integer :: nelemn ! 2*(nx - 1)*(ny -1) , numero de elementos
@@ -1895,7 +1822,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
       call uval ( etax, etay, g, indx, isotri, it, nelemn, neqn, &
         nnodes, node, np, un, uny, unx, xc, xix, xiy, xq, yc, yq )
 
-!  Para cada función base:
+  !  Para cada función base:
 
       do iq = 1, nnodes
 
@@ -1916,7 +1843,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
           f(iver) = f(iver) + ar * bb*(un(1)*unx(2)+un(2)*uny(2))
         end if
 
-!  Para otra función base
+  !  Para otra función base
 
       do iqq = 1, nnodes
 
@@ -1929,7 +1856,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
           jv = indx(ipp,2)
           jp = insc(ipp)
 
-!  Variable de velocidad horizontal
+  !  Variable de velocidad horizontal
 
           if ( 0 < ju ) then
 
@@ -1973,7 +1900,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
 
           end if
 
-! Variable de velocidad vertical
+  ! Variable de velocidad vertical
 
           if ( 0 < jv ) then
 
@@ -2017,7 +1944,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
 
           end if
 
-!  Variable de presión
+  !  Variable de presión
 
           if ( 0 < jp ) then
 
@@ -2037,7 +1964,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
     end do
   end do
 
-!  La última ecuación se "restablece" para requerir que la última presión sea cero.
+  !  La última ecuación se "restablece" para requerir que la última presión sea cero.
 
   f(neqn) = 0.0d0
   do j = neqn-nlband, neqn-1
@@ -2050,7 +1977,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
 
   a(nband,neqn) = 1.0d0
 
-!  Factorizamos la matriz
+  !  Factorizamos la matriz
 
   call dgbfa ( a, maxrow, neqn, nlband, nlband, ipivot, info )
 
@@ -2061,7 +1988,7 @@ subroutine linsys ( a, area, f, g, indx, insc, isotri, itype, maxrow, nband, nel
     stop
   end if
 
-!  Resolvemos el sistema lineal 
+  !  Resolvemos el sistema lineal 
 
   job = 0
   call dgbsl ( a, maxrow, neqn, nlband, nlband, ipivot, f, job )
@@ -2072,8 +1999,8 @@ end subroutine linsys
 
 subroutine uval ( etax, etay, g, indx, isotri, it, nelemn, neqn, nnodes,node, np, & 
                 un, uny, unx, xc, xix, xiy, xq, yc, yq )
-! uval : evalua las velocidades en un punto de cuadratura dado y calculo de
-!  las derivadas espaciales de las velocidades.
+  ! uval : evalua las velocidades en un punto de cuadratura dado y calculo de
+  !  las derivadas espaciales de las velocidades.
 
   integer :: nelemn          ! 2*(nx - 1)*(ny -1) Numero de elementos 
   integer :: neqn            ! Iterador de numero de ecuaciones 
@@ -2144,32 +2071,32 @@ subroutine uval ( etax, etay, g, indx, isotri, it, nelemn, neqn, nnodes,node, np
 end subroutine uval
 
 
-! Estas subrutinas las reescribi del paquete LINPACK de Algebra Lineal 
+  ! Estas subrutinas las reescribi del paquete LINPACK de Algebra Lineal 
 
 subroutine dgbfa ( abd, lda, n, ml, mu, ipvt, info )
-! dgbfa : factoriza una matriz de bandas real por eliminación.
-! La dgbfa suele llamarse dgbco, pero puede llamarse
-! directamente con un ahorro de tiempo si no se necesita rcond.
-!
-! Referencias :
-!
-!    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
-!    LINPACK User's Guide,
-!    SIAM, (Society for Industrial and Applied Mathematics),
-!    3600 University City Science Center,
-! 
-!    Parametros 
-! 
-!    abd(lda,n) : a la entrada, la matriz en banda almacenamiento. 
-!    las columnas de la matriz se almacenan en las columnas de abd
-!    y las diagonales de la matriz se almacenan en las filas ml+1 a
-!    2*ml+mu+1 de abd. a la salida, una matriz triangular superior en almacenamiento de banda
-!    y los multiplicadores que se utilizaron para obtenerlo. la factorización
-!    se puede escribir a = l*u donde l es un producto de permutación y unidad inferior
-!    matrices triangulares y u es triangular superior.
-!    lda : la dimensión principal del arreglo abd, se requiere 2*ml + mu + 1 <= lda.
-!    ml, mu, el número de diagonales debajo y encima de la diagonal principal. 
-!    0 <= ml < n, 0 <= mu < n.
+  ! dgbfa : factoriza una matriz de bandas real por eliminación.
+  ! La dgbfa suele llamarse dgbco, pero puede llamarse
+  ! directamente con un ahorro de tiempo si no se necesita rcond.
+  !
+  ! Referencias :
+  !
+  !    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
+  !    LINPACK User's Guide,
+  !    SIAM, (Society for Industrial and Applied Mathematics),
+  !    3600 University City Science Center,
+  ! 
+  !    Parametros 
+  ! 
+  !    abd(lda,n) : a la entrada, la matriz en banda almacenamiento. 
+  !    las columnas de la matriz se almacenan en las columnas de abd
+  !    y las diagonales de la matriz se almacenan en las filas ml+1 a
+  !    2*ml+mu+1 de abd. a la salida, una matriz triangular superior en almacenamiento de banda
+  !    y los multiplicadores que se utilizaron para obtenerlo. la factorización
+  !    se puede escribir a = l*u donde l es un producto de permutación y unidad inferior
+  !    matrices triangulares y u es triangular superior.
+  !    lda : la dimensión principal del arreglo abd, se requiere 2*ml + mu + 1 <= lda.
+  !    ml, mu, el número de diagonales debajo y encima de la diagonal principal. 
+  !    0 <= ml < n, 0 <= mu < n.
 
   integer :: lda      ! La dimensión principal del arreglo abd, se requiere 2*ml + mu + 1 <= lda.
   integer :: n        ! El orden de la matriz.
@@ -2200,7 +2127,7 @@ subroutine dgbfa ( abd, lda, n, ml, mu, ipvt, info )
   m = ml + mu + 1
   info = 0
 
-! Cero columnas iniciales de relleno
+  ! Cero columnas iniciales de relleno
 
   j0 = mu + 2
   j1 = min ( n, m ) - 1
@@ -2215,29 +2142,29 @@ subroutine dgbfa ( abd, lda, n, ml, mu, ipvt, info )
   jz = j1
   ju = 0
 
-!  Eliminación gaussiana con pivoteo parcial.
+  !  Eliminación gaussiana con pivoteo parcial.
 
   do k = 1, n-1
 
-!  Pone a cero la siguiente columna de relleno.
+  !  Pone a cero la siguiente columna de relleno.
 
   jz = jz + 1
   if ( jz <= n ) then
       abd(1:ml,jz) = 0.0d0
   end if
 
-! Encuentre L = índice de pivote.
+  ! Encuentre L = índice de pivote.
 
     lm = min ( ml, n-k )
     l = idamax (lm+1, abd(m,k), 1 ) + m - 1
     ipvt(k) = l + k - m
 
-!  El pivote cero implica que esta columna ya está triangularizada.
+  !  El pivote cero implica que esta columna ya está triangularizada.
 
     if ( abd(l,k) == 0.0d0) then
     info = k
 
-!  Intercambiar si es necesario.
+  !  Intercambiar si es necesario.
 
     else
 
@@ -2247,12 +2174,12 @@ subroutine dgbfa ( abd, lda, n, ml, mu, ipvt, info )
         abd(m,k) = t
     end if
 
-!  Calcular multiplicadores.
+  !  Calcular multiplicadores.
 
       t = -1.0d0 / abd(m,k)
       call dscal(lm, t, abd(m+1,k), 1 )
 
-! Eliminación de filas con indexación de columnas.
+  ! Eliminación de filas con indexación de columnas.
 
       ju = min (max( ju, mu+ipvt(k) ), n )
       mm = m
@@ -2279,8 +2206,8 @@ subroutine dgbfa ( abd, lda, n, ml, mu, ipvt, info )
 
   ipvt(n) = n
 
-!    k, if u(k,k) == 0.0. Esta no es una condición de error para este
-!    subrutina, pero indica que dgbsl dividirá por cero si es llamado. 
+  !    k, if u(k,k) == 0.0. Esta no es una condición de error para este
+  !    subrutina, pero indica que dgbsl dividirá por cero si es llamado. 
 
   if ( abd(m,n) == 0.0d0 ) then
     info = n
@@ -2292,17 +2219,17 @@ end subroutine dgbfa
 
 
 subroutine dgbsl( abd, lda, n, ml, mu, ipvt, b, job )
-! 
-! dgbsl : resuelve un sistema real de bandas factorizado por dgbco o dgbfa.
-! dgbsl puede resolver a * x = b o a' * x = b.
-! 
-! Se producirá una división por cero si el factor de entrada contiene un cero en la diagonal. 
-! técnicamente esto indica singularidad, pero a menudo es causado por argumentos inadecuados o
-! Ajuste de lda. 
-! No ocurrirá si las subrutinas están llamado correctamente y si dgbco ha establecido 
-! 0.0 < rcond o dgbfa ha puesto info == 0.
-! 
-! Para calcular inversa(a) * c donde c es una matriz con p columnas:
+  ! 
+  ! dgbsl : resuelve un sistema real de bandas factorizado por dgbco o dgbfa.
+  ! dgbsl puede resolver a * x = b o a' * x = b.
+  ! 
+  ! Se producirá una división por cero si el factor de entrada contiene un cero en la diagonal. 
+  ! técnicamente esto indica singularidad, pero a menudo es causado por argumentos inadecuados o
+  ! Ajuste de lda. 
+  ! No ocurrirá si las subrutinas están llamado correctamente y si dgbco ha establecido 
+  ! 0.0 < rcond o dgbfa ha puesto info == 0.
+  ! 
+  ! Para calcular inversa(a) * c donde c es una matriz con p columnas:
 
   integer :: lda      ! La dimensión principal de la matriz 
   integer :: n        ! El orden de la matriz.
@@ -2325,8 +2252,8 @@ subroutine dgbsl( abd, lda, n, ml, mu, ipvt, b, job )
   m = mu + ml + 1
 
 
-! Resolvemos A * x = b.
-! Primero resuelve L * y = b.
+  ! Resolvemos A * x = b.
+  ! Primero resuelve L * y = b.
 
   if ( job == 0 ) then
     if ( 0 < ml ) then
@@ -2343,7 +2270,7 @@ subroutine dgbsl( abd, lda, n, ml, mu, ipvt, b, job )
 
     end if
 
-! Ahora resuelve U * x = y.
+  ! Ahora resuelve U * x = y.
 
     do k = n, 1, -1
       b(k) = b(k) / abd(m,k)
@@ -2354,8 +2281,8 @@ subroutine dgbsl( abd, lda, n, ml, mu, ipvt, b, job )
       call daxpy ( lm, t, abd(la,k), 1, b(lb), 1 )
     end do
 
-! Si es distinto de cero, resuelve A' * x = b.
-! Primero resolvemos U' * y = b.
+  ! Si es distinto de cero, resuelve A' * x = b.
+  ! Primero resolvemos U' * y = b.
 
   else
 
@@ -2367,7 +2294,7 @@ subroutine dgbsl( abd, lda, n, ml, mu, ipvt, b, job )
       b(k) = ( b(k) - t ) / abd(m,k)
     end do
 
-! Ahora resolvemos L' * x = y.
+  ! Ahora resolvemos L' * x = y.
 
     if ( 0 < ml ) then
       do k = n-1, 1, -1
@@ -2389,13 +2316,13 @@ end subroutine dgbsl
 
 
 subroutine daxpy (n, da, dx, incx, dy, incy )
-! daxpy : calcula tiempos constantes de un vector más un vector 
-! Utiliza bucles desenrollados para incrementos iguales a uno.
-! 
-!    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-!    Basic Linear Algebra Subprograms for Fortran Usage,
-!    Algorithm 539
-!
+  ! daxpy : calcula tiempos constantes de un vector más un vector 
+  ! Utiliza bucles desenrollados para incrementos iguales a uno.
+  ! 
+  !    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
+  !    Basic Linear Algebra Subprograms for Fortran Usage,
+  !    Algorithm 539
+  !
 
   real(8) :: da     ! El multiplicador de dx
   real(8) :: dx(*)  ! El primer vector
@@ -2417,7 +2344,7 @@ subroutine daxpy (n, da, dx, incx, dy, incy )
     return
   end if
 
-! Código para incrementos desiguales o incrementos iguales no es igual a 1.
+  ! Código para incrementos desiguales o incrementos iguales no es igual a 1.
 
   if ( incx /= 1 .or. incy /= 1 ) then
 
@@ -2439,7 +2366,7 @@ subroutine daxpy (n, da, dx, incx, dy, incy )
       iy = iy + incy
     end do
 
-! Código para ambos incrementos igual a 1.
+  ! Código para ambos incrementos igual a 1.
 
   else
 
@@ -2463,18 +2390,18 @@ end subroutine daxpy
 
 
 
-subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, & 
+subroutine resid ( area, g, indx, insc, isotri,  nelemn, neqn, nnodes, & 
                   node , np, nquad, phi, psi, res, reynld, xc, xm, yc, ym )
-! resid : Calcula el residual del valor de g (Sigue siendo la libreria de LINPAK)
-! 
-! Referencias :
-!
-!    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
-!    LINPACK User's Guide,
-!    SIAM, (Society for Industrial and Applied Mathematics),
-!    3600 University City Science Center
-! 
-! Las variables son las mismas que linsys y nstokes 
+  ! resid : Calcula el residual del valor de g (Sigue siendo la libreria de LINPAK)
+  ! 
+  ! Referencias :
+  !
+  !    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
+  !    LINPACK User's Guide,
+  !    SIAM, (Society for Industrial and Applied Mathematics),
+  !    3600 University City Science Center
+  ! 
+  ! Las variables son las mismas que linsys y nstokes 
 
   integer :: nelemn
   integer :: neqn
@@ -2497,8 +2424,6 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
   integer :: it
   integer :: itype
   integer :: iver
-  integer :: iwrite
-  integer :: j
   integer :: jp
   integer :: ju
   integer :: jv
@@ -2558,7 +2483,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
 
     call uval(etax,etay,g,indx,isotri,it,nelemn,neqn,nnodes,node,np,un,uny,unx,xc,xix,xiy,xq,yc,yq)
 
-! Para cada función base:
+  ! Para cada función base:
       do iq = 1, nnodes
 
         ip = node(it,iq)    
@@ -2578,7 +2503,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
           res(iver) = res(iver)-ar*bb*(un(1)*unx(2)+un(2)*uny(2))
         end if
 
-! Para la otra función base
+  ! Para la otra función base
 
         do iqq = 1, nnodes
           ipp = node(it,iqq)
@@ -2590,7 +2515,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
           jv = indx(ipp,2)
           jp = insc(ipp)
 
-! Variable de velocidad horizontal
+  ! Variable de velocidad horizontal
 
       if ( 0 < ju ) then
 
@@ -2648,7 +2573,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
 
           end if
 
-! Variable de velocidad vertical
+  ! Variable de velocidad vertical
 
           if ( 0 < jv ) then
 
@@ -2708,7 +2633,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
              end if
           end if
 
-! Variable de presión
+  ! Variable de presión
 
           if ( 0 < jp ) then
 
@@ -2729,7 +2654,7 @@ subroutine resid ( area, g, indx, insc, isotri, iwrite, nelemn, neqn, nnodes, &
     end do
   end do
 
-! La última ecuación se "reinicia" para requerir que la última presión ser cero
+  ! La última ecuación se "reinicia" para requerir que la última presión ser cero
 
   res(neqn) = g(neqn)
 
@@ -2811,21 +2736,21 @@ end subroutine resid
 
 
 function ddot ( n, dx, incx, dy, incy )
-! 
-! ddot : Obtiene el producto escalar de dos vectores.
-!
-! Esta rutina usa bucles desenrollados para incrementos iguales a uno.
-!
-!  Referencia
-!
-!    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
-!    LINPACK User's Guide,
-!    SIAM, (Society for Industrial and Applied Mathematics),
-!    3600 University City Science Center,
-!    Philadelphia, PA, 19104-2688.
-!    ISBN 0-89871-172-X
-!
-! Las variables son las mismas que linsys y nstokes 
+  ! 
+  ! ddot : Obtiene el producto escalar de dos vectores.
+  !
+  ! Esta rutina usa bucles desenrollados para incrementos iguales a uno.
+  !
+  !  Referencia
+  !
+  !    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
+  !    LINPACK User's Guide,
+  !    SIAM, (Society for Industrial and Applied Mathematics),
+  !    3600 University City Science Center,
+  !    Philadelphia, PA, 19104-2688.
+  !    ISBN 0-89871-172-X
+  !
+  ! Las variables son las mismas que linsys y nstokes 
 
 
   real(8) :: ddot   ! Valor de la funcion ddot 
@@ -2850,8 +2775,8 @@ function ddot ( n, dx, incx, dy, incy )
   
   end if
 
-! Código para incrementos desiguales o incrementos iguales
-! (No es igual a 1) 
+  ! Código para incrementos desiguales o incrementos iguales
+  ! (No es igual a 1) 
 
 
   if ( incx /= 1 .or. incy /= 1 ) then
@@ -2874,7 +2799,7 @@ function ddot ( n, dx, incx, dy, incy )
       iy = iy + incy
     end do
 
-! Código para ambos incrementos igual a 1.
+  ! Código para ambos incrementos igual a 1.
 
   else
 
@@ -2904,25 +2829,25 @@ end function ddot
 
 
 subroutine dscal ( n, sa, x, incx )
-! 
-! dscal : Escala un vector por una constante.
-!  Referencias 
-!
-!    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
-!    LINPACK User's Guide,
-!    SIAM, (Society for Industrial and Applied Mathematics),
-!    3600 University City Science Center,
-!    Philadelphia, PA, 19104-2688.
-!    ISBN 0-89871-172-X
-!
-!    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-!    Basic Linear Algebra Subprograms for Fortran Usage,
-!    Algorithm 539,
-!    ACM Transactions on Mathematical Software,
-!    Volume 5, Number 3, September 1979, pages 308-323.
-!
-! implicit none
-! Las variables son las mismas que linsys y nstokes 
+  ! 
+  ! dscal : Escala un vector por una constante.
+  !  Referencias 
+  !
+  !    Jack Dongarra, Cleve Moler, Jim Bunch and Pete Stewart,
+  !    LINPACK User's Guide,
+  !    SIAM, (Society for Industrial and Applied Mathematics),
+  !    3600 University City Science Center,
+  !    Philadelphia, PA, 19104-2688.
+  !    ISBN 0-89871-172-X
+  !
+  !    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
+  !    Basic Linear Algebra Subprograms for Fortran Usage,
+  !    Algorithm 539,
+  !    ACM Transactions on Mathematical Software,
+  !    Volume 5, Number 3, September 1979, pages 308-323.
+  !
+  ! implicit none
+  ! Las variables son las mismas que linsys y nstokes 
 
 
   integer :: i
@@ -2971,17 +2896,17 @@ end subroutine dscal
 
 
 subroutine getg ( f, iline, my, neqn, u )
-! 
-! getg : extrae los valores de una cantidad a lo largo de la línea del perfil.
-! 
-! Referencias 
-!    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-!    Basic Linear Algebra Subprograms for Fortran Usage,
-!    Algorithm 539,
-!    ACM Transactions on Mathematical Software,
-!    Volume 5, Number 3, September 1979, pages 308-323
-!  implicit none
-! Las variables son las mismas que linsys y nstokes 
+  ! 
+  ! getg : extrae los valores de una cantidad a lo largo de la línea del perfil.
+  ! 
+  ! Referencias 
+  !    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
+  !    Basic Linear Algebra Subprograms for Fortran Usage,
+  !    Algorithm 539,
+  !    ACM Transactions on Mathematical Software,
+  !    Volume 5, Number 3, September 1979, pages 308-323
+  !  implicit none
+  ! Las variables son las mismas que linsys y nstokes 
 
 
   integer :: my
@@ -3010,29 +2935,29 @@ end subroutine getg
 
 
 
-subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
+subroutine gram ( gr, iline, indx,  my, nelemn, nnodes, node, &
   np, r, uprof, xc, xprof, yc )
-!
-! gram  : calcula y almacena la matriz gram.
-! 
-! La rutina calcula la matriz de gram y el vector
-! cuyas componentes son la integral de línea de ui*phi(j).
-! se utiliza una regla de cuadratura de gauss de tres puntos para evaluar la integral de línea.
-! 
-!    output, gr(my,my) : La matriz de gram.
-!
-!    iline(my) : La lista de números desconocidos globales a lo largo de la línea del perfil.
-!
-!    indx(np,2 ) :  Para cada nodo i, el índice de las velocidades u y v en ese nodo, o 0.
-!
-!    iwrite : Controla la cantidad de salida impresa.
-! 
-!    output, r(my) : La integral de línea de uprof * phi.
-!
-!    uprof(my) : La velocidad horizontal a lo largo de la línea del perfil. 
-!
-!  implicit none
-! Las demas variables son las mismas que linsys y nstokes 
+  !
+  ! gram  : calcula y almacena la matriz gram.
+  ! 
+  ! La rutina calcula la matriz de gram y el vector
+  ! cuyas componentes son la integral de línea de ui*phi(j).
+  ! se utiliza una regla de cuadratura de Gauss de tres puntos para evaluar la integral de línea.
+  ! 
+  !    output, gr(my,my) : La matriz de gram.
+  !
+  !    iline(my) : La lista de números desconocidos globales a lo largo de la línea del perfil.
+  !
+  !    indx(np,2 ) :  Para cada nodo i, el índice de las velocidades u y v en ese nodo, o 0.
+  !
+  !    iwrite : Controla la cantidad de salida impresa.
+  ! 
+  !    output, r(my) : La integral de línea de uprof * phi.
+  !
+  !    uprof(my) : La velocidad horizontal a lo largo de la línea del perfil. 
+  !
+  !  implicit none
+  ! Las demas variables son las mismas que linsys y nstokes 
 
   integer :: my
   integer :: nelemn
@@ -3050,7 +2975,6 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
   integer :: iquad
   integer :: it
   integer :: iun
-  integer :: iwrite
   integer :: j
   integer :: jj
   integer :: k
@@ -3078,9 +3002,9 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
   real(8) :: y
   real(8) :: yc(np)
   real(8) :: yq(3)
-!
-! Valores para cuadratura de Gauss de 3 puntos.
-!
+  !
+  ! Valores para cuadratura de Gauss de 3 puntos.
+  !
   wt(1) = 5.0d0 / 9.0d0
   wt(2) = 8.0d0 / 9.0d0
   wt(3) = 5.0d0 / 9.0d0
@@ -3092,16 +3016,16 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
   r(1:my) = 0.0d0
   gr(1:my,1:my) = 0.0d0
 
-!
-! Calcula la integral de línea recorriendo intervalos a lo largo de la línea
-! utilizando la cuadratura de Gauss de tres puntos
-!
+  !
+  ! Calcula la integral de línea recorriendo intervalos a lo largo de la línea
+  ! utilizando la cuadratura de Gauss de tres puntos
+  !
 
   do it = 1, nelemn
-!
-! Comprobar para ver si estamos en un triángulo con un lado a lo largo de la línea
-! x = xprof
-!
+  !
+  ! Comprobar para ver si estamos en un triángulo con un lado a lo largo de la línea
+  ! x = xprof
+  !
       k = node(it,1)
       kk = node(it,2)
 
@@ -3116,9 +3040,9 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
         ar = bma2 * wt(iquad)
         x = xprof
         y = yc(k) + bma2 * ( yq(iquad) + 1.0d0)
-!
-! Calcule U interna en puntos de cuadratura
-!
+  !
+  ! Calcule U interna en puntos de cuadratura
+  !
         uiqdpt = 0.0d0
 
         do iq = 1, nnodes
@@ -3136,9 +3060,9 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
             end if
           end if
         end do
-!
-! Solo pase por encima de los nodos que se encuentran en la línea x = xprof
-!
+  !
+  ! Solo pase por encima de los nodos que se encuentran en la línea x = xprof
+  !
         do iq = 1, nnodes
           if ( iq == 1 .or. iq == 2 .or. iq == 4 ) then
             ip = node(it,iq)
@@ -3168,22 +3092,22 @@ subroutine gram ( gr, iline, indx, iwrite, my, nelemn, nnodes, node, &
 
   end do
 
-! Para ver como va la cosa 
-! if ( 3 <= iwrite ) then
-!   write(*,*)' '
-!   write(*,*)' Matriz de gramos:'
-!   do i = 1, my
-!     do j = 1, my
-!       write(*,*)i,j,gr(i,j)
-!     end do
-!   end do
-!   write(*,*)' '
-!   write(*,*)'Vector R:'
-!   do i = 1, my
-!     write(*,*)r(i)
-!   end do
+  ! Para ver como va la cosa 
+  ! if ( 3 <= iwrite ) then
+  !   write(*,*)' '
+  !   write(*,*)' Matriz de gramos:'
+  !   do i = 1, my
+  !     do j = 1, my
+  !       write(*,*)i,j,gr(i,j)
+  !     end do
+  !   end do
+  !   write(*,*)' '
+  !   write(*,*)'Vector R:'
+  !   do i = 1, my
+  !     write(*,*)r(i)
+  !   end do
 
-! end if
+  ! end if
 
   return
 end subroutine gram
@@ -3196,35 +3120,35 @@ end subroutine gram
 
 
 function idamax ( n, dx, incx )
-! 
-! idamax : encuentra el índice del elemento vectorial de máximo valor absoluto.!
-!  Referencias:
-!
-!    Jack Dongarra, Cleve Moler, Jim Bunch, Pete Stewart,
-!    LINPACK User's Guide,
-!    SIAM, (Society for Industrial and Applied Mathematics),
-!    3600 University City Science Center,
-!    Philadelphia, PA, 19104-2688.
-!    ISBN 0-89871-172-X
-!
-!    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
-!    Basic Linear Algebra Subprograms for Fortran Usage,
-!    Algorithm 539,
-!    ACM Transactions on Mathematical Software,
-!    Volume 5, Number 3, September 1979, pages 308-323.
-!
-!  Parametros:
-!
-!    n : El número de entradas en el vector.
-!
-!    x(*) : El vector a examinar.
-!
-!    incx : El incremento entre sucesivos entries of sx.
-!
-!    idamax : El índice del elemento de sx de valor absoluto máximo.
-! 
-!  implicit none
-! Las demas variables son las mismas que linsys y nstokes 
+  ! 
+  ! idamax : encuentra el índice del elemento vectorial de máximo valor absoluto.!
+  !  Referencias:
+  !
+  !    Jack Dongarra, Cleve Moler, Jim Bunch, Pete Stewart,
+  !    LINPACK User's Guide,
+  !    SIAM, (Society for Industrial and Applied Mathematics),
+  !    3600 University City Science Center,
+  !    Philadelphia, PA, 19104-2688.
+  !    ISBN 0-89871-172-X
+  !
+  !    Charles Lawson, Richard Hanson, David Kincaid, Fred Krogh,
+  !    Basic Linear Algebra Subprograms for Fortran Usage,
+  !    Algorithm 539,
+  !    ACM Transactions on Mathematical Software,
+  !    Volume 5, Number 3, September 1979, pages 308-323.
+  !
+  !  Parametros:
+  !
+  !    n : El número de entradas en el vector.
+  !
+  !    x(*) : El vector a examinar.
+  !
+  !    incx : El incremento entre sucesivos entries of sx.
+  !
+  !    idamax : El índice del elemento de sx de valor absoluto máximo.
+  ! 
+  !  implicit none
+  ! Las demas variables son las mismas que linsys y nstokes 
 
   real(8) :: dmax
   real(8) :: dx(*)
@@ -3282,23 +3206,23 @@ end function idamax
 
 
 function igetl ( i, iline, my )
-!
-! igetl : obtiene el número local desconocido a lo largo de la línea del perfil.
-! para nuestro problema, la línea de perfil se especifica mediante x = xprof.
-! nos dan un número global desconocido y necesitamos determinar el
-! número local desconocido.
-! 
-!    i : el número desconocido global.
-!
-!    iline(my) : la lista de números desconocidos globales a lo largo de la línea del perfil.
-!
-!    my : el número de nodos en la línea de perfil.
-!
-!    igetl : el índice del nodo en el perfil línea en la que aparece i global desconocido, o 
-!    -1 si no existe tal entrada.
-!
-!  implicit none
-! Las demas variables son las mismas que linsys y nstokes 
+  !
+  ! igetl : obtiene el número local desconocido a lo largo de la línea del perfil.
+  ! para nuestro problema, la línea de perfil se especifica mediante x = xprof.
+  ! nos dan un número global desconocido y necesitamos determinar el
+  ! número local desconocido.
+  ! 
+  !    i : el número desconocido global.
+  !
+  !    iline(my) : la lista de números desconocidos globales a lo largo de la línea del perfil.
+  !
+  !    my : el número de nodos en la línea de perfil.
+  !
+  !    igetl : el índice del nodo en el perfil línea en la que aparece i global desconocido, o 
+  !    -1 si no existe tal entrada.
+  !
+  !  implicit none
+  ! Las demas variables son las mismas que linsys y nstokes 
 
   integer :: my
   integer :: i
@@ -3320,11 +3244,11 @@ end function igetl
 
 
 subroutine pval ( g, insc, long, mx, my, nelemn, neqn, nnodes, node, np, press )
-! 
-! pval : Lee las presiones en cada punto y despues las interpola en cada punto par, impar 
-! 
-!  implicit none
-! Las demas variables son las mismas que linsys y nstokes 
+  ! 
+  ! pval : Lee las presiones en cada punto y despues las interpola en cada punto par, impar 
+  ! 
+  !  implicit none
+  ! Las demas variables son las mismas que linsys y nstokes 
 
   integer :: mx
   integer :: my
@@ -3348,9 +3272,9 @@ subroutine pval ( g, insc, long, mx, my, nelemn, neqn, nnodes, node, np, press )
 
   press(1:mx,1:my) = 0.0d0
 
-!
-!  Lectura de las presiones 
-! 
+  !
+  !  Lectura de las presiones 
+  ! 
 
   do it = 1, nelemn
     do iq = 1, 3
@@ -3371,9 +3295,9 @@ subroutine pval ( g, insc, long, mx, my, nelemn, neqn, nnodes, node, np, press )
     end do
   end do
 
-!
-! Interpolar las presiones en los puntos (par, impar) e (par, impar).
-!
+  !
+  ! Interpolar las presiones en los puntos (par, impar) e (par, impar).
+  !
 
   do i = 2, mx-1, 2
     do j = 1, my, 2
@@ -3387,9 +3311,9 @@ subroutine pval ( g, insc, long, mx, my, nelemn, neqn, nnodes, node, np, press )
     end do
   end do
 
-!
-!  Interpola las presiones en los puntos (pares, pares)
-!
+  !
+  !  Interpola las presiones en los puntos (pares, pares)
+  !
 
   do j = 2, my-1, 2
     do i = 2, mx-1, 2
@@ -3398,24 +3322,24 @@ subroutine pval ( g, insc, long, mx, my, nelemn, neqn, nnodes, node, np, press )
   end do
 
   return
-end
+end subroutine pval
 
 
 
 
 
 function ubdry ( iuk, yy )
-!
-! ubdry : establece el flujo parabólico de entrada en términos del valor del parámetro
-!
-!  implicit none
+  !
+  ! ubdry : establece el flujo parabólico de entrada en términos del valor del parámetro
+  !
+  !  implicit none
 
   integer :: iuk
-!
-!    iuk : El índice de lo desconocido.
-!    1, la velocidad horizontal.
-!    2, la velocidad vertical
-!
+  !
+  !    iuk : El índice de lo desconocido.
+  !    1, la velocidad horizontal.
+  !    2, la velocidad vertical
+  !
   real(8) :: ubdry ! El valor del límite prescrito componente de flujo en esta coordenada en el límite.
   real(8) :: yy    !  La coordenada y del punto límite.
 
@@ -3433,22 +3357,22 @@ end function ubdry
 
 
 function ubump ( g, indx, ip, iqq, isotri, it, iukk, nelemn, neqn, nnodes, node, np, xc, yc )
-! 
-! ubump : Calcula la sensibilidad dU/dA en la protuberancia.
-!
-!    Esta rutina establece
-!
-!      dU/dA = -uy * phi
-!      dV/dA = -vy * phi
-!
-!   Donde phi es la forma de la protuberancia.
-!
-!  Parametros:
-!
-!   indx(maxnp,2) : Contiene, para cada nodo i, el índice de las velocidades u y v en ese nodo, o 0.
-!
-!   implicit none
-!   Las demas variables son las mismas que linsys y nstokes 
+  ! 
+  ! ubump : Calcula la sensibilidad dU/dA en la protuberancia.
+  !
+  !    Esta rutina establece
+  !
+  !      dU/dA = -uy * phi
+  !      dV/dA = -vy * phi
+  !
+  !   Donde phi es la forma de la protuberancia.
+  !
+  !  Parametros:
+  !
+  !   indx(maxnp,2) : Contiene, para cada nodo i, el índice de las velocidades u y v en ese nodo, o 0.
+  !
+  !   implicit none
+  !   Las demas variables son las mismas que linsys y nstokes 
 
   integer :: nelemn
   integer :: neqn
@@ -3504,9 +3428,9 @@ function ubump ( g, indx, ip, iqq, isotri, it, iukk, nelemn, neqn, nnodes, node,
     call trans(det,etax,etay,it,nelemn,nnodes,node,np,xc,xix,xiy,xq,yc,yq)
   end if
 
-!
-!  Calcula el valor de uy y vy (soluciones antiguas) en el nodo
-!
+  !
+  !  Calcula el valor de uy y vy (soluciones antiguas) en el nodo
+  !
 
   call uval(etax,etay,g,indx,isotri,it,nelemn,neqn,nnodes,node,np,un,uny,unx,xc,xix,xiy,xq,yc,yq)
 
@@ -3534,20 +3458,20 @@ end function ubump
 
 
 subroutine file_name_inc ( file_name )
-! 
-! file_name_inc : Itera de mayor a menor le archivo de escritura 
-! Este lo reescribi de Python la verdad :) 
-! 
-!  Ejemplo:
-!
-!      Input            Output
-!      -----            ------
-!      'a7to11.txt'     'a7to12.txt'
-!      'a7to99.txt'     'a8to00.txt'
-!      'a9to99.txt'     'a0to00.txt'
-!      'cat.txt'        ' '
-!      ' '              STOP!
-!
+  ! 
+  ! file_name_inc : Itera de mayor a menor le archivo de escritura 
+  ! Este lo reescribi de Python la verdad :) 
+  ! 
+  !  Ejemplo:
+  !
+  !      Input            Output
+  !      -----            ------
+  !      'a7to11.txt'     'a7to12.txt'
+  !      'a7to99.txt'     'a8to00.txt'
+  !      'a9to99.txt'     'a0to00.txt'
+  !      'cat.txt'        ' '
+  !      ' '              STOP!
+  !
 
   character :: c
   integer :: change
@@ -3555,42 +3479,29 @@ subroutine file_name_inc ( file_name )
   integer :: i
   integer :: lens
   character ( len = * ) file_name
-
+  
   lens = len_trim ( file_name )
-
   if ( lens <= 0 ) then
     write ( *, '(a)' ) ' '
     write ( *, '(a)' ) 'Error!'
     stop
   end if
-
   change = 0
-
   do i = lens, 1, -1
-
     c = file_name(i:i)
-
     if ( lge ( c, '0' ) .and. lle ( c, '9' ) ) then
-
       change = change + 1
-
       digit = ichar ( c ) - 48
       digit = digit + 1
-
       if ( digit == 10 ) then
         digit = 0
       end if
-
       c = char ( digit + 48 )
-
       file_name(i:i) = c
-
       if ( c /= '0' ) then
         return
       end if
-
     end if
-
   end do
 
   if ( change == 0 ) then
@@ -3604,10 +3515,10 @@ end subroutine file_name_inc
 
 
 subroutine time_write ( f, indx, neqn, np, yc, xc )
-!
-! time_write : Escribe en nuestro archivo de datos los valores de los nodos en las coordenadas x,y 
-! Tambien los coeficientes de las velocidades u,v 
-! 
+  !
+  ! time_write : Escribe en nuestro archivo de datos los valores de los nodos en las coordenadas x,y 
+  ! Tambien los coeficientes de las velocidades u,v 
+  ! 
 
   integer :: neqn
   integer :: np
@@ -3650,13 +3561,14 @@ subroutine time_write ( f, indx, neqn, np, yc, xc )
 
     write ( 33, '(2x,g14.6,2x,g14.6,2x,g14.6,2x,g14.6)' ) xc(ip), yc(ip), u, v 
     write ( 33, '(2x,g14.6,2x,g14.6,2x,g14.6,2x,g14.6)' ) xc(ip), -yc(ip), u, -v 
-
+    write ( 34, '(2x,g14.6,2x,g14.6,2x,g14.6)' ) xc(ip), yc(ip), sqrt(u**2.+v**2.)  !cambio
+    write ( 34, '(2x,g14.6,2x,g14.6,2x,g14.6)' ) xc(ip), -yc(ip), sqrt(u**2.+v**2.)  !cambio 
 
 
   end do
   return
 
-  end subroutine time_write
+end subroutine time_write
 
 
 
